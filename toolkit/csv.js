@@ -1,4 +1,6 @@
-var _csv_each = function (_csv, _process) {
+FPF_CSV = {};
+
+FPF_CSV.csv_each = function (_csv, _process) {
     var _lines = _csv.trim().split("\n");
     var _keys = [];
     for (var _i = 0; _i < _lines.length; _i++) {

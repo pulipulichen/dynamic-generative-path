@@ -1,14 +1,14 @@
-DGP_STATISTICS = {};
+FPF_STATISTICS = {};
 
 // -------------------
 
-DGP_STATISTICS.get_min = function (arr) {
+FPF_STATISTICS.get_min = function (arr) {
   return arr.reduce(function (p, v) {
     return ( p < v ? p : v );
   });
 };
 
-DGP_STATISTICS.get_max = function (arr) {
+FPF_STATISTICS.get_max = function (arr) {
   return arr.reduce(function (p, v) {
     return ( p > v ? p : v );
   });
@@ -16,7 +16,7 @@ DGP_STATISTICS.get_max = function (arr) {
 
 // ------------------------------
 
-DGP_STATISTICS.float_to_fixed = function(_float, _fixed) {
+FPF_STATISTICS.float_to_fixed = function(_float, _fixed) {
     var _place = 1;
     for (var _i = 0; _i < _fixed; _i++) {
             _place = _place * 10;
@@ -30,7 +30,7 @@ DGP_STATISTICS.stat_avg = function(_ary) {
     return avg;
 };
 
-DGP_STATISTICS.stat_stddev = function (_ary) {
+FPF_STATISTICS.stat_stddev = function (_ary) {
    var i,j,total = 0, mean = 0, diffSqredArr = [];
    for(i=0;i<_ary.length;i+=1){
        total+=_ary[i];

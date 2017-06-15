@@ -95,7 +95,7 @@ DGP.main = function () {
  */
 DGP.parse_profile = function (_profile_csv) {
     var _profile = {};
-    _csv_each(_profile_csv, function (_row) {
+    FPF_CSV.csv_each(_profile_csv, function (_row) {
         var _user = _row[0].value;
         _profile[_user] = {};
         for (var _r = 1; _r < _row.length; _r++) {
@@ -112,7 +112,7 @@ DGP.parse_profile = function (_profile_csv) {
  */
 DGP.parse_sequence = function (_sequence_csv) {
     var _sequence = {};
-    _csv_each(_sequence_csv, function (_row) {
+    FPF_CSV.csv_each(_sequence_csv, function (_row) {
         var _user = _row[0].value;
         if (typeof(_sequence[_user]) === "undefined") {
             _sequence[_user] = [];
