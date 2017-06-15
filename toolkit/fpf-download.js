@@ -1,12 +1,12 @@
 FPF_DOWNLOAD = {};
 
 FPF_DOWNLOAD.download_file_button = function () {
-    var _panel = $(".file-process-framework");
+    var _btn= $(this);
     
-    var _file_name = _panel.find(".filename").val();
-    var _data = _panel.find(".preview").val();
+    var _file_name = $(_btn.attr("download_filename_selector")).val();
+    var _data = $(_btn.attr("download_data_selector")).val();
     
-    FPF_DOWNLOAD.download_file(_data, _file_name, "arff");
+    FPF_DOWNLOAD.download_file(_data, _file_name, _btn.attr("download_type"));
 };
 
 FPF_DOWNLOAD.download_file = function (data, filename, type) {

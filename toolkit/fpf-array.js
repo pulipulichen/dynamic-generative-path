@@ -1,11 +1,11 @@
-DGP_ARRAY = {};
+FPF_ARRAY = {};
 
 /**
  * 隨機挑出一個變項
  * @param {Array} _array
  * @returns {Object}
  */
-DGP_ARRAY.array_pick_random_one = function (_array) {
+FPF_ARRAY.array_pick_random_one = function (_array) {
     return _array[Math.floor(Math.random() * _array.length)];
 };
 
@@ -14,7 +14,7 @@ DGP_ARRAY.array_pick_random_one = function (_array) {
  * @param {Array} _array
  * @returns {Object}
  */
-DGP_ARRAY.array_pick_random_one_remove = function (_array) {
+FPF_ARRAY.array_pick_random_one_remove = function (_array) {
     var _i = Math.floor(Math.random() * _array.length);
     var _rand = _array[_i];
     _array.splice(_i, 1);
@@ -34,7 +34,7 @@ DGP_ARRAY.array_pick_random_one_remove = function (_array) {
  * @param {Array} _array
  * @returns {Array}
  */
-DGP_ARRAY.array_clone = function (_array) {
+FPF_ARRAY.array_clone = function (_array) {
     return JSON.parse(JSON.stringify(_array));
 };
 
