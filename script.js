@@ -27,6 +27,7 @@ var _loading_disable = function () {
 $(function () {
     var _panel = $(".file-process-framework");
     //_panel.find(".input-mode.textarea").change(_load_textarea);
+    _panel.find(".click-load-textarea").click(FPF_FILE.load_textarea);
     _panel.find(".file-input").change(FPF_FILE.load_file);
     //_panel.find("#input_file_submit").click(_load_file);
     _panel.find(".download-file").click(FPF_DOWNLOAD.download_file_button);

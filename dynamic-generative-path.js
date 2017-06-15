@@ -46,14 +46,18 @@ DGP.main = function () {
     //console.log(_numeric_lag_data);
     
     // ------------------------------------
-    var _model;
-    if (false) {
-        // 建立類神經網路
-        _model = MODELS.build_mlp_model(_numeric_lag_data, _class_data);
-    }
-    else {
-        // 建立隨機模型
-        _model = MODELS.build_random_model(_numeric_lag_data, _class_data);
+    var _model = MODELS.get_model();
+    console.log(["model", _model]);
+    if (_model === null) {
+        var _radio_model = $('input[name="model"]:checked').val();
+        if (_radio_model === "radio_model_mlp") {
+            // 建立類神經網路
+            _model = MODELS.build_mlp_model(_numeric_lag_data, _class_data);
+        }
+        else if (_radio_model === "radio_model_random") {
+            // 建立隨機模型
+            _model = MODELS.build_random_model(_numeric_lag_data, _class_data);
+        }
     }
     
     // -----------------------------------
@@ -159,6 +163,8 @@ DGP.parse_sequence = function (_sequence_csv) {
 // ----------------------
 
 DGP.build_lag_data = function (_profile, _sequence, _lag_config) {
+    var _config_end_distance_weight = FPF_FORM.get_value_float("#config_end_distance_weight");
+    
     var _data = [];
     var _class_data = [];
     for (var _user in _sequence) {
@@ -190,7 +196,7 @@ DGP.build_lag_data = function (_profile, _sequence, _lag_config) {
                     var _class = [_user_profile[_p]];
                     // 計算他離結尾還有多少距離
                     var _end_steps = _user_seq.length - _lag_config - _i;
-                    _class = _class * (1/_end_steps);
+                    _class = _class * _config_end_distance_weight * (1/_end_steps);
                     _class_data.push([_class]);
                 }
             }

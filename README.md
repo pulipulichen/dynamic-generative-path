@@ -9,3 +9,4 @@ Demo: https://pulipulichen.github.io/dynamic-generative-path/
 - Start按鈕無效
 - 還沒測試過上傳檔案
 - y變成陣列
+- 把重複的next也納入考量

@@ -29,6 +29,7 @@
 <script src="toolkit/fpf-copy.js"></script>
 <script src="toolkit/fpf-download.js"></script>
 <script src="toolkit/fpf-file.js"></script>
+<script src="toolkit/fpf-form.js"></script>
 <script src="dynamic-generative-path.js"></script>
 <script src="ml-models.js"></script>
 
@@ -66,7 +67,7 @@
     </div>
     <div class="field">
         <label for="input_mode_textarea_sequence">Sequence CSV file: </label>
-        <textarea class="input-mode textarea" id="input_mode_textarea_sequence" onfocus="this.select()"></textarea>
+        <textarea class="input-mode textarea reset-saved-model" id="input_mode_textarea_sequence" onfocus="this.select()"></textarea>
     </div>
     <div class="field">
         <label for="input_mode_textarea_target">Target CSV file: </label>
@@ -102,29 +103,56 @@
                set_selector="#input_mode_textarea_target"
                />
     </div>
-  
-  <div class="inline field">
-    <label for="lag_config">Lag Config:</label>
-    <input type="text" name="lag_config" id="lag_config" value="3" />
-  </div>
-  <div class="inline field">
-    <label for="lag_config">Batch size:</label>
-    <input type="text" name="config_batch_size" id="config_batch_size" value="10" />
-  </div>
+
+    <div class="inline field">
+        <label for="lag_config">Lag Config:</label>
+        <input type="text" name="lag_config" id="lag_config" value="3"  class="reset-saved-model" />
+    </div>
+    <div class="inline field">
+        <label for="config_batch_size">Batch size:</label>
+        <input type="text" name="config_batch_size" id="config_batch_size" value="10" />
+    </div>
+    <div class="inline field">
+        <label for="config_end_distance_weight">End distance weight:</label>
+        <input type="text" name="config_end_distance_weight" id="config_end_distance_weight" value="1" />
+    </div>
     
-  <div class="inline field">
-    <label for="lag_config">Model:</label>
-    隨機模型
-    類神經網路
-  </div>
-  <div class="inline field">
-    <label for="lag_config">Model:</label>
-    類神經網路的學習速度
-    類神經網路的次數
-  </div>
+    <hr />
+
+    <div class="inline field">
+        <input type="radio" name="model" id="radio_model_random" value="radio_model_random" checked="checked" class="reset-saved-model" />
+        <label for="radio_model_random">Random Model</label>
+
+        <input type="radio" name="model" id="radio_model_mlp" value="radio_model_mlp" class="reset-saved-model" />
+        <label for="radio_model_mlp">Multilayer perceptron (MLP)</label>
+    </div>
     
+    <div class="inline field">
+        <label for="config_mlp_lr">MLP learning rate:</label>
+        <input type="text" name="config_mlp_lr" id="config_mlp_lr" value="0.6" class="reset-saved-model" />
+    </div>
+    <div class="inline field">
+        <label for="config_mlp_epochs">MLP epochs:</label>
+        <input type="text" name="config_mlp_epochs" id="config_mlp_epochs" value="50" class="reset-saved-model" />
+    </div>
+    
+    <div class="inline field">
+        <label>Hidden layer sizes:</label>
+        
+        <input type="radio" name="config_mlp_hidden_layer_sizes" id="config_mlp_hidden_layer_sizes_auto" value="config_mlp_hidden_layer_sizes_auto" checked="checked" class="reset-saved-model" />
+        <label for="config_mlp_hidden_layer_sizes_auto">Auto</label>
+
+        <input type="radio" name="config_mlp_hidden_layer_sizes" id="config_mlp_hidden_layer_sizes_custom" value="config_mlp_hidden_layer_sizes_custom" class="reset-saved-model" />
+        <label for="config_mlp_hidden_layer_sizes_custom">
+            <div class="inline field">
+                Custom: 
+                <input type="text" name="mlp_hidden_layer_sizes" id="mlp_hidden_layer_sizes" value="5,4,4" class="reset-saved-model" />
+            </div>
+        </label>
+    </div>
+        
     <div>
-        <button type="button" class="start-generative-path ui button fluid teal">START</button>
+        <button type="button" class="start-generative-path click-load-textarea ui button fluid teal">START</button>
     </div>
 
 
