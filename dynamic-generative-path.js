@@ -70,7 +70,7 @@ DGP.main = function () {
     // 開始進行生成
     var _path_sum = 0;
     for (var _i = 0; _i < 100; _i++) {
-        var _path = _start_generative_path(_start_points
+        var _path = DGP.start_generative_path(_start_points
             , _end_points
             , _next_points
             , _lag_config
@@ -285,7 +285,7 @@ DGP.create_cat_feature = function (_cat_json, _cat_rdict) {
 DGP.convert_cat_to_numeric = function (_lag_data, _cat_rdict) {
     var _numeric_lag_data = [];
     for (var _i = 0; _i < _lag_data.length; _i++) {
-        var _d = _create_cat_feature(_lag_data[_i], _cat_rdict);
+        var _d = DGP.create_cat_feature(_lag_data[_i], _cat_rdict);
         _numeric_lag_data.push(_d);
     }
     return _numeric_lag_data;
@@ -378,17 +378,23 @@ DGP.start_generative_path = function (_start_points, _end_points, _next_points, 
     // --------------------------
     // 隨機從_start_points中取出一個
     //console.log(_start_points);
-    var _start_point = DGP_ARRAY.array_pick_random_one_remove(_start_points);
+    //var _start_point = FPF_ARRAY.array_pick_random_one_remove(_start_points);
+    var _start_point = FPF_ARRAY.array_pick_random_one(_start_points);
     //console.log(["開始", _start_point]);
     _lag_data.push(_start_point);
     _path.push(_start_point);
     
     var _before_point = _start_point;
     while (true) {
-        var _next_list = DGP_ARRAY.array_clone(_next_points[_before_point]);
+        var _next_list = FPF_ARRAY.array_clone(_next_points[_before_point]);
+        if (_next_list.length === 0) {
+            console.log(["無路可走", _path.length, _path]);
+            break;
+        }
+        
         //console.log(_next_list);
         
-        var _next_point = DGP_ARRAY.array_pick_random_one_remove(_next_list);
+        var _next_point = FPF_ARRAY.array_pick_random_one_remove(_next_list);
         
         // 關閉已知陣列的檢查，這個雖然可以幫助快點走到終點，但不一定好
         //while (_next_list.length > 0 && $.inArray(_next_point, _lag_data) > -1) {
@@ -405,7 +411,7 @@ DGP.start_generative_path = function (_start_points, _end_points, _next_points, 
             var _y1 = DGP.predict_y(_lag_data, _next_point, _model, _cat_rdict);
             //console.log(["先走這個", _y1, _next_point]);
             while (_next_list.length > 0) {
-                var _next_point2 = _pick();
+                var _next_point2 = FPF_ARRAY.array_pick_random_one_remove(_next_list);
                 var _y2 = DGP.predict_y(_lag_data, _next_point2, _model, _cat_rdict);
                 //console.log(["挑一個試試看", _y2, _next_point2]);
                 
@@ -442,7 +448,7 @@ DGP.start_generative_path = function (_start_points, _end_points, _next_points, 
 // ---------------------------------------------
 
 DGP.convert_lag_data_to_x = function (_lag_data, _next_point, _cat_rdict) {
-    var _lag_data1 = _array_clone(_lag_data);
+    var _lag_data1 = FPF_ARRAY.array_clone(_lag_data);
     _lag_data1.push(_next_point);
     //console.log(_lag_data);
 

@@ -21,7 +21,16 @@
   ga('send', 'pageview');
 
 </script>
-<script src="machine_learning.min.js"></script>
+
+<script src="lib/machine_learning.min.js"></script>
+<script src="toolkit/fpf-array.js"></script>
+<script src="toolkit/fpf-csv.js"></script>
+<script src="toolkit/fpf-statistics.js"></script>
+<script src="toolkit/fpf-copy.js"></script>
+<script src="toolkit/fpf-download.js"></script>
+<script src="toolkit/fpf-file.js"></script>
+<script src="dynamic-generative-path.js"></script>
+<script src="ml-models.js"></script>
 
 <!-- ------------------------------------ -->
 
@@ -51,37 +60,49 @@
 <!-- --------------------------------- -->
 
 <div class="ui bottom attached  tab segment" data-tab="textarea">
-  <div class="field">
-    <label for="input_mode_textarea">Paste Profile CSV file here: </label>
-    <textarea class="input-mode textarea" id="input_mode_textarea" onfocus="this.select()"></textarea>    
-  </div>
     <div class="field">
-    <label for="input_mode_textarea_buffer">Paste Sequence CSV file here: </label>
-<textarea class="input-mode textarea" id="input_mode_textarea_buffer" onfocus="this.select()"></textarea>
-  </div>
+        <label for="input_mode_profile">Profile CSV file: </label>
+        <textarea class="input-mode textarea" id="input_mode_textarea_profile" onfocus="this.select()"></textarea>    
+    </div>
+    <div class="field">
+        <label for="input_mode_textarea_sequence">Sequence CSV file: </label>
+        <textarea class="input-mode textarea" id="input_mode_textarea_sequence" onfocus="this.select()"></textarea>
+    </div>
+    <div class="field">
+        <label for="input_mode_textarea_target">Target CSV file: </label>
+        <textarea class="input-mode textarea" id="input_mode_textarea_target" onfocus="this.select()"></textarea>
+    </div>
 </div>
  
 
 <!-- --------------------------------- -->
 
 <div class="ui bottom attached active tab segment" data-tab="file">
-  <div class="field">
-      <label for="files">Test Profile CSV file: </label>
+    <div class="field">
+        <label for="files">Profile CSV file: </label>
+        <input class="myfile file-input" name="files[]" multiple="" type="file"
+               id="files" 
+               set_filename="true"
+               set_selector="#input_mode_profile"
+               />
     </div>
     <div class="field">
-      <input class="myfile" name="files[]" id="files" multiple="" type="file" />
+        <label for="files_sequence">Sequence CSV file: </label>
+        <input class="myfile_sequence file-input" name="files_buffer[]" multiple="" type="file"
+               id="files_buffer"
+               set_filename="true"
+               set_selector="#input_mode_textarea_sequence"
+               />
     </div>
     <div class="field">
-      <label for="files_buffer">Sequence CSV file: </label>
-      <input class="myfile_buffer" name="files_buffer[]" id="files_buffer" multiple="" type="file" />
+        <label for="files_target">Target CSV file: </label>
+        <input class="myfile_target file-input" name="files_target[]" multiple="" type="file" 
+               id="files_target"
+               set_filename="true"
+               set_selector="#input_mode_textarea_target"
+               />
     </div>
-
   
-    <div class="inline field" style="display: none;">
-    <input type="checkbox" name="autodownload" id="autodownload" />
-    <label for="autodownload">Download Processed File Automatically</label>
-  </div>
-    
   <div class="inline field">
     <label for="lag_config">Lag Config:</label>
     <input type="text" name="lag_config" id="lag_config" value="3" />
@@ -119,7 +140,11 @@
 	
 	<div class="ui doubling grid">
 		<div class="eight sixteen column">
-                    <button type="button" class="fluid ui large right labeled icon green button download-file">
+                    <button type="button" class="fluid ui large right labeled icon green button download-file"
+                            download_filename_selector=".file-process-framework .filename"
+                            download_data_selector=".file-process-framework .preview"
+                            download_type="text/plain"
+                            >
                         <i class="right download icon"></i>
                         DOWNLOAD
                     </button>
@@ -139,7 +164,9 @@
         <div class="ui  pointing below  medium blue basic label encoding" style="margin-left: 1em">
           Get error encoding text? <a href="http://blog.pulipuli.info/2016/12/utf-8notepad-how-to-convert-plain-text.html" target="notepad" >Try to Convert TXT file to UTF8 encoding?</a>
         </div>
-            <button type="button" class="ui mini compact teal right labeled icon button copy-csv" style="margin-left: 1em">
+            <button type="button" class="ui mini compact teal right labeled icon button copy-csv" 
+                    copy_selector="#preview"
+                    style="margin-left: 1em">
                 COPY File
                 <i class="copy icon"></i>
 	    </button>

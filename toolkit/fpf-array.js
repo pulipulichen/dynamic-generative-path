@@ -35,7 +35,14 @@ FPF_ARRAY.array_pick_random_one_remove = function (_array) {
  * @returns {Array}
  */
 FPF_ARRAY.array_clone = function (_array) {
-    return JSON.parse(JSON.stringify(_array));
+    try {
+        return JSON.parse(JSON.stringify(_array));
+    }
+    catch (_e) {
+        //throw ["Array clone failed", _array];
+        return [];
+    }
+    
 };
 
 // --------------------

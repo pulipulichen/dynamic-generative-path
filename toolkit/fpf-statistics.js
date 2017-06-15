@@ -24,7 +24,7 @@ FPF_STATISTICS.float_to_fixed = function(_float, _fixed) {
     return Math.round(_float * _place) / _place;
 };
 
-DGP_STATISTICS.stat_avg = function(_ary) {
+FPF_STATISTICS.stat_avg = function(_ary) {
     var sum = _ary.reduce(function(a, b) { return a + b; });
     var avg = sum / _ary.length;
     return avg;
