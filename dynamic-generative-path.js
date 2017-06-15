@@ -77,6 +77,7 @@ DGP.main = function () {
     
     // ------------------------------------
     // 開始進行生成
+    var _goal_array = [];
     var _path_result_array = [];
     for (var _i = 0; _i < _config_batch_size; _i++) {
         var _path_result = DGP.start_generative_path(_start_points
@@ -88,6 +89,13 @@ DGP.main = function () {
         var _path = _path_result.path;
         _path_result_array.push(_path.length);
         
+        if (_path_result.goal === true) {
+            _goal_array.push(1);
+        }
+        else {
+            _goal_array.push(0);
+        }
+        
         _result.push([_path_result.goal, _path.length].join(","));
     }
     
@@ -98,6 +106,13 @@ DGP.main = function () {
     var _std = FPF_STATISTICS.stat_stddev(_path_result_array);
     _std = FPF_STATISTICS.float_to_fixed(_std, 3);
     _result.push(["標準差", _std].join(","));
+    
+    var _avg = FPF_STATISTICS.stat_avg(_goal_array);
+    _avg = FPF_STATISTICS.float_to_fixed(_avg, 3);
+    _result.push(["路徑成功率", _avg].join(","));
+    
+    _result.push("\n最後一個生成路徑:");
+    _result.push(_path.join("\n"));
     
     //_result = _path.join("\n");
     //_result = "總共" + _path.length + "步\n" + _result;
