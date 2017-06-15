@@ -45,10 +45,15 @@ DGP.main = function () {
     //console.log(_numeric_lag_data);
     
     // ------------------------------------
-    // 建立類神經網路
-    //var _model = _build_mlp_model(_numeric_lag_data, _class_data);
-    // 建立隨機模型
-    var _model = _build_random_model(_numeric_lag_data, _class_data);
+    var _model;
+    if (false) {
+        // 建立類神經網路
+        _model = MODELS.build_mlp_model(_numeric_lag_data, _class_data);
+    }
+    else {
+        // 建立隨機模型
+        _model = MODELS.build_random_model(_numeric_lag_data, _class_data);
+    }
     
     // -----------------------------------
     // 準備生成路徑所需的資料
@@ -364,3 +369,105 @@ DGP.parse_next_points = function (_sequence) {
 
 // -----------------------
 
+DGP.start_generative_path = function (_start_points, _end_points, _next_points, _lag_config, _cat_rdict, _model) {
+    var _path = [];
+    var _lag_data = [];
+    
+    var _max_length = 500;
+    
+    // --------------------------
+    // 隨機從_start_points中取出一個
+    //console.log(_start_points);
+    var _start_point = DGP_ARRAY.array_pick_random_one_remove(_start_points);
+    //console.log(["開始", _start_point]);
+    _lag_data.push(_start_point);
+    _path.push(_start_point);
+    
+    var _before_point = _start_point;
+    while (true) {
+        var _next_list = DGP_ARRAY.array_clone(_next_points[_before_point]);
+        //console.log(_next_list);
+        
+        var _next_point = DGP_ARRAY.array_pick_random_one_remove(_next_list);
+        
+        // 關閉已知陣列的檢查，這個雖然可以幫助快點走到終點，但不一定好
+        //while (_next_list.length > 0 && $.inArray(_next_point, _lag_data) > -1) {
+        //    _next_point = DGP_ARRAY.array_pick_random_one_remove(_next_list);
+        //    //console.log(["重複了，挑下一個", _next_point]);
+        //}
+        
+        //console.log(_next_point);
+        if (_lag_data.length < _lag_config-1) {
+            _lag_data.push(_next_point);
+            _path.push(_next_point);
+        }
+        else {
+            var _y1 = DGP.predict_y(_lag_data, _next_point, _model, _cat_rdict);
+            //console.log(["先走這個", _y1, _next_point]);
+            while (_next_list.length > 0) {
+                var _next_point2 = _pick();
+                var _y2 = DGP.predict_y(_lag_data, _next_point2, _model, _cat_rdict);
+                //console.log(["挑一個試試看", _y2, _next_point2]);
+                
+                if (_y2 > _y1) {
+                    //console.log(["更新", _y2, _next_point2]);
+                    _next_point = _next_point2;
+                    _y1 = _y2;
+                }
+                else {
+                    break;
+                }
+            }
+            //console.log([_y1, _next_point]);
+            _path.push(_next_point);
+            _lag_data.slice(0,1);
+            _lag_data.push(_next_point);
+            _before_point = _next_point;
+        }
+        
+        if (_path.length > _max_length) {
+            console.log("失敗了，沒有走到終點");
+            break;
+        }
+        
+        if ($.inArray(_next_point, _end_points) > -1) {
+            console.log(["成功走到終點", _path.length, _path]);
+            break;
+        }
+    }
+    
+    return _path;
+};
+
+// ---------------------------------------------
+
+DGP.convert_lag_data_to_x = function (_lag_data, _next_point, _cat_rdict) {
+    var _lag_data1 = _array_clone(_lag_data);
+    _lag_data1.push(_next_point);
+    //console.log(_lag_data);
+
+    // 把它轉換成能預測的資料
+    var _x_json = {};
+    for (var _l = 0; _l < _lag_data1.length; _l++) {
+
+        var _json = JSON.parse(_lag_data1[_l]);
+        for (var _key in _json) {
+            _x_json["lag" + _l + "_" + _key] = _json[_key];
+        }
+    }
+    var _x = DGP.create_cat_feature(_x_json, _cat_rdict);
+    return _x;
+};
+
+DGP.predict_y = function (_lag_data, _next_point, _model, _cat_rdict) {
+    var _x = DGP.convert_lag_data_to_x(_lag_data, _next_point, _cat_rdict);
+    //console.log(_x);
+    var _y = _model.predict([_x]);
+    
+    // 直接取得一個數值
+    while (typeof(_y) === "object") {
+        _y = _y[0];
+    }
+    
+    return _y;
+};

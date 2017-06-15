@@ -1,5 +1,23 @@
 MODELS = {};
 
+MODELS._saved_model = undefined;
+
+MODELS.get_model = function () {
+    return this._saved_model;
+};
+
+MODELS.set_model = function (_model) {
+    this._saved_model = _model;
+    return this;
+};
+
+MODELS.reset_model = function () {
+    this._saved_model = undefined;
+    return this;
+};
+
+// ----------------------
+
 MODELS.build_random_model = function (_x, _y) {
     return {predict: function () {
         return Math.random();
