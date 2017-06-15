@@ -100,15 +100,8 @@ FPF_FILE.load_file_buffer = function(evt) {
 
 FPF_FILE.load_textarea = function(evt) {
     var _panel = $(".file-process-framework");
-    
-    // --------------------------
-
-    var _result = _panel.find(".input-mode#input_mode_textarea").val();
-    var _buffer = _panel.find(".input-mode#input_mode_textarea_buffer").val();
-    if (_result.trim() === "") {
-        return;
-    }
-
+    //console.log(1);
+  
     // ---------------------------
     
     _panel.find(".loading").removeClass("hide");
@@ -122,15 +115,13 @@ FPF_FILE.load_textarea = function(evt) {
     var time = new Date();
     var _file_date = ("0" + time.getHours()).slice(-2)
             + ("0" + time.getMinutes()).slice(-2);
-    var _file_name = "csv_result-" + _file_date + _output_filename_ext;
-    var _test_file_name = "test_document_" + _file_date + _output_filename_ext;
+    var _file_name = FPF_FILE.output_filename_prefix + _file_date + FPF_FILE.output_filename_ext;
 
     _panel.find(".filename").val(_file_name);
-    _panel.find(".test_filename").val(_test_file_name);
     
     // ---------------------------
 
-    _process_file(_result, _buffer, function (_result) {
+    _process_file(function (_result) {
         _panel.find(".preview").val(_result);
 
         _panel.find(".loading").addClass("hide");

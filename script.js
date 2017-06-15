@@ -44,7 +44,7 @@ $(function () {
             $("#input_mode_textarea_sequence").val(_csv);
             $.get("target.csv", function (_csv) {
                 $("#input_mode_textarea_target").val(_csv);
-                _process_file();
+                FPF_FILE.load_textarea();
             });
         });
     });

@@ -16,6 +16,7 @@ DGP.main = function () {
     // -----------------------------------
     // 準備模型所需的資料
     var _lag_config = parseInt($("#lag_config").val(), 10);
+    var _config_batch_size = parseInt($("#config_batch_size").val(), 10);
     //console.log(_lag_config);
     
     // 建立lag資料
@@ -67,21 +68,36 @@ DGP.main = function () {
     //return;
     
     // ------------------------------------
+    // 準備輸出
+    _result = [];
+    
+    // ------------------------------------
     // 開始進行生成
-    var _path_sum = 0;
-    for (var _i = 0; _i < 100; _i++) {
-        var _path = DGP.start_generative_path(_start_points
+    var _path_result_array = [];
+    for (var _i = 0; _i < _config_batch_size; _i++) {
+        var _path_result = DGP.start_generative_path(_start_points
             , _end_points
             , _next_points
             , _lag_config
             , _cat_rdict
             , _model);
-        _path_sum += _path.length;
+        var _path = _path_result.path;
+        _path_result_array.push(_path.length);
+        
+        _result.push([_path_result.goal, _path.length].join(","));
     }
-    //console.log(["平均完成步數", (_path_sum/100)]);
     
-    _result = _path.join("\n");
-    _result = "總共" + _path.length + "步\n" + _result;
+    var _avg = FPF_STATISTICS.stat_avg(_path_result_array);
+    _avg = FPF_STATISTICS.float_to_fixed(_avg, 3);
+    _result.push(["平均完成步數", _avg].join(","));
+    
+    var _std = FPF_STATISTICS.stat_stddev(_path_result_array);
+    _std = FPF_STATISTICS.float_to_fixed(_std, 3);
+    _result.push(["標準差", _std].join(","));
+    
+    //_result = _path.join("\n");
+    //_result = "總共" + _path.length + "步\n" + _result;
+    _result = _result.join("\n");
     
     return _result;
 };
@@ -374,6 +390,7 @@ DGP.start_generative_path = function (_start_points, _end_points, _next_points, 
     var _lag_data = [];
     
     var _max_length = 500;
+    var _goal = false;
     
     // --------------------------
     // 隨機從_start_points中取出一個
@@ -438,11 +455,15 @@ DGP.start_generative_path = function (_start_points, _end_points, _next_points, 
         
         if ($.inArray(_next_point, _end_points) > -1) {
             console.log(["成功走到終點", _path.length, _path]);
+            _goal = true;
             break;
         }
     }
     
-    return _path;
+    return {
+        path: _path,
+        goal: _goal
+    };
 };
 
 // ---------------------------------------------
