@@ -27,9 +27,15 @@ MODELS.build_random_model = function (_x, _y) {
     return _model;
 };
 
+/**
+ * https://github.com/junku901/machine_learning/blob/master/lib/mlp.js
+ * @param {type} _x
+ * @param {type} _y
+ * @returns {MODELS.build_mlp_model.mlp|ml.MLP}
+ */
 MODELS.build_mlp_model = function (_x, _y) {
     var _hl_config = FPF_FORM.get_checked_value("config_mlp_hidden_layer_sizes");
-    var _hl = [_x[0].length-1];
+    var _hl = [_x[0].length, _y[0].length];
     if (_hl_config === "config_mlp_hidden_layer_sizes_custom") {
         _hl = $("#mlp_hidden_layer_sizes").val().split(",");
     }
@@ -46,6 +52,7 @@ MODELS.build_mlp_model = function (_x, _y) {
 
     var _lr = FPF_FORM.get_value_float("#config_mlp_lr");
     var _epochs = FPF_FORM.get_value_float("#config_mlp_epochs");
+    _epochs = _epochs * _x.length;
 
     mlp.train({
         'lr' : _lr,

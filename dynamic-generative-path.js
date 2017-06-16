@@ -35,12 +35,12 @@ DGP.main = function () {
     // 建立lag資料
     var _lag_data_json = DGP.build_lag_data(_profile, _sequence , _target,  _lag_config);
     var _train_data = _lag_data_json.lag_data;
-    DGP.console_log("train_data", _train_data[0]);
+    DGP.console_log("train_data[0]", _train_data[0]);
     
     var _target_data = _lag_data_json.class_data;
     DGP.console_log("target_data", _target_data[0]);
     //_target_data = DGP.feature_normalize(_target_data);
-    DGP.console_log("feature_normalize target_data", _target_data[0]);
+    DGP.console_log("feature_normalize target_data[0]", _target_data[0]);
     DGP.console_log("feature_normalize target_data", FPF_ARRAY.get_last(_target_data));
     //return;
     
@@ -289,16 +289,44 @@ DGP.build_lag_data = function (_profile, _sequence, _target, _lag_config) {
         var _user_target = _target[_user];
         
         //console.log([_user, _user_seq.length, _lag_config]);
-        for (var _i = 0; _i < (_user_seq.length - _lag_config); _i++) {
+        for (var _i = -1 * _lag_config + 1; _i < _user_seq.length; _i++) {
             var _d = {};
             
             // 加入lag的資料
-            for (var _j = 0; _j < _lag_config; _j++) {
-                var _seq = _user_seq[_i+_j];
-                for (var _s in _seq) {
-                    if (_s !== "time") {
-                        var _key = DGP.build_lag_key(_j, _s);
-                        _d[_key] = _seq[_s];
+            if (_i < 0) {
+                var _index = _i + _lag_config - 1;
+                var _seq_json = _user_seq[_index];
+                for (var _j = 0; _j < _lag_config; _j++) {
+                    _index = _i+_j;
+                    var _s = "null";
+                    if (typeof(_user_seq[_index]) !== "undefined") {
+                        var _seq = _user_seq[_index];
+                        for (var _s in _seq) {
+                            if (_s !== "time") {
+                                var _key = DGP.build_lag_key(_j, _s);
+                                _d[_key] = _seq[_s];
+                            }
+                        }
+                    }
+                    else {
+                        for (var _s in _seq_json) {
+                            if (_s !== "time") {
+                                var _key = DGP.build_lag_key(_j, _s);
+                                _d[_key] = "null";
+                            }
+                        }
+                    }
+                }
+            }
+            else {
+                for (var _j = 0; _j < _lag_config; _j++) {
+                    var _index = _i+_j;
+                    var _seq = _user_seq[_index];
+                    for (var _s in _seq) {
+                        if (_s !== "time") {
+                            var _key = DGP.build_lag_key(_j, _s);
+                            _d[_key] = _seq[_s];
+                        }
                     }
                 }
             }
