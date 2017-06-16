@@ -66,9 +66,9 @@ DGP.main = function () {
     // ------------------------------------
     // 開始進行生成
     
-    var _mock_profile = {
-        age: 0.18181818181818182
-    };
+    var _mock_profile = DGP.generate_mock_profile(_profile);
+    DGP.console_log("mock", _mock_profile);
+    return;
     
     var _goal_array = [];
     var _path_result_array = [];
@@ -113,6 +113,36 @@ DGP.main = function () {
     _result = _result.join("\n");
     
     return _result;
+};
+
+// ----------------------------------
+
+DGP.generate_mock_profile = function (_profile) {
+    
+    // ----------------------
+    // 建立起feature資料庫
+    var _features_array = {};
+    for (var _user in _profile) {
+        for (var _key in _profile[_user]) {
+            var _value = _profile[_user][_key];
+            if (typeof(_features_array[_key]) === "undefined") {
+                _features_array[_key] = [];
+            }
+            
+            if ($.inArray(_value, _features_array[_key]) === -1) {
+                _features_array[_key].push(_value);
+            }
+        }
+    }
+    
+    // --------------------
+    // 挑選隨機特徵
+    var _feature = {};
+    for (var _key in _features_array) {
+        _feature[_key] = FPF_ARRAY.array_pick_random_one(_features_array[_key]);
+    }
+    
+    return _feature;
 };
 
 // ----------------------------------
