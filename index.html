@@ -116,14 +116,18 @@
         <label for="config_end_distance_weight">End distance weight:</label>
         <input type="text" name="config_end_distance_weight" id="config_end_distance_weight" value="1" />
     </div>
+    <div class="inline field">
+        <label for="config_path_max_length">Max path max length:</label>
+        <input type="text" name="config_path_max_length" id="config_path_max_length" value="500" />
+    </div>
     
     <hr />
 
     <div class="inline field">
-        <input type="radio" name="model" id="radio_model_random" value="radio_model_random" checked="checked" class="reset-saved-model" />
+        <input type="radio" name="model" id="radio_model_random" value="radio_model_random" class="reset-saved-model" />
         <label for="radio_model_random">Random Model</label>
 
-        <input type="radio" name="model" id="radio_model_mlp" value="radio_model_mlp" class="reset-saved-model" />
+        <input checked="checked"  type="radio" name="model" id="radio_model_mlp" value="radio_model_mlp" class="reset-saved-model" />
         <label for="radio_model_mlp">Multilayer perceptron (MLP)</label>
     </div>
     
@@ -133,7 +137,7 @@
     </div>
     <div class="inline field">
         <label for="config_mlp_epochs">MLP epochs:</label>
-        <input type="text" name="config_mlp_epochs" id="config_mlp_epochs" value="50" class="reset-saved-model" />
+        <input type="text" name="config_mlp_epochs" id="config_mlp_epochs" value="10" class="reset-saved-model" />
     </div>
     
     <div class="inline field">

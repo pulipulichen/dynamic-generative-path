@@ -7,11 +7,11 @@ DGP.main = function () {
 // ---------------------------------------
     // 將CSV轉換成JSON
     var _profile = DGP.parse_profile($("#input_mode_textarea_profile").val());
-    //console.log(_profile);
+    DGP.console_log("profile", _profile);
     var _sequence = DGP.parse_sequence($("#input_mode_textarea_sequence").val());
-    //console.log(_sequence);
+    DGP.console_log("sequence", _sequence);
     var _target = DGP.parse_profile($("#input_mode_textarea_target").val());
-    //console.log(_profile);
+    DGP.console_log("sequence", _target);
     
     // -----------------------------------
     // 準備模型所需的資料
@@ -21,55 +21,29 @@ DGP.main = function () {
     
     // 建立lag資料
     var _lag_data_json = DGP.build_lag_data(_target, _sequence, _lag_config);
-    var _lag_data = _lag_data_json.lag_data;
-    var _class_data = _lag_data_json.class_data;
-    //console.log(_lag_data);
-    //console.log(_class_data);
+    var _train_data = _lag_data_json.lag_data;
+    DGP.console_log("train_data", _train_data[0]);
     
+    var _target_data = _lag_data_json.class_data;
+    DGP.console_log("target_data", _target_data[0]);
     
-    var _cat_dict = DGP.build_lag_dict(_lag_data);
-    //console.log(_cat_dict);
-    var _cat_rdict = DGP.reverse_dict(_cat_dict);
-    //console.log(_cat_rdict);
+    // --------------------------------------------
     
-    // 試著建立資料看看
-    /*
-    // dummy variables
-    var _t = _create_cat_feature({
-        "lag0_GL": "GL5_5",
-        "lag0_URL": "/zh-tw"
-    }, _cat_rdict);
-    console.log(_t);
-    */
-    
-    var _numeric_lag_data = DGP.convert_cat_to_numeric(_lag_data, _cat_rdict);
-    //console.log(_numeric_lag_data);
-    
-    // ------------------------------------
-    var _model = MODELS.get_model();
-    //console.log(["model", _model]);
-    if (_model === null) {
-        var _radio_model = $('input[name="model"]:checked').val();
-        if (_radio_model === "radio_model_mlp") {
-            // 建立類神經網路
-            _model = MODELS.build_mlp_model(_numeric_lag_data, _class_data);
-        }
-        else if (_radio_model === "radio_model_random") {
-            // 建立隨機模型
-            _model = MODELS.build_random_model(_numeric_lag_data, _class_data);
-        }
-    }
+    var _model_type = $('input[name="model"]:checked').val();
+    var _config_end_distance_weight = FPF_FORM.get_value_float("#config_end_distance_weight");
+    var _predict_function = DGP.build_predict_function(_model_type
+        , _train_data
+        , _target_data
+        , _config_end_distance_weight);
     
     // -----------------------------------
     // 準備生成路徑所需的資料
     var _start_points = DGP.parse_start_points(_sequence);
-    //console.log(_start_points);
+    DGP.console_log("_start_points", _start_points);
     var _end_points = DGP.parse_end_points(_sequence);
-    //console.log(_end_points);
-    
+    DGP.console_log("_end_points", _end_points);
     var _next_points = DGP.parse_next_points(_sequence);
-    //console.log(_next_points);
-    //return;
+    DGP.console_log("_next_points", _next_points);
     
     // ------------------------------------
     // 準備輸出
@@ -80,12 +54,11 @@ DGP.main = function () {
     var _goal_array = [];
     var _path_result_array = [];
     for (var _i = 0; _i < _config_batch_size; _i++) {
-        var _path_result = DGP.start_generative_path(_start_points
+        var _path_result = DGP.build_generative_path(_start_points
             , _end_points
             , _next_points
             , _lag_config
-            , _cat_rdict
-            , _model);
+            , _predict_function);
         var _path = _path_result.path;
         _path_result_array.push(_path.length);
         
@@ -174,12 +147,24 @@ DGP.parse_sequence = function (_sequence_csv) {
     return _sequence;
 };
 
+// ----------------------
+
+DGP.console_log = function (_title, _message) {
+    if (typeof(_message) === "undefined") {
+        _message = _title;
+        _title = undefined;
+    }
+    
+    if (_title !== undefined) {
+        console.log(_title);
+    }
+    
+    console.log(_message);
+};
 
 // ----------------------
 
 DGP.build_lag_data = function (_profile, _sequence, _lag_config) {
-    var _config_end_distance_weight = FPF_FORM.get_value_float("#config_end_distance_weight");
-    
     var _data = [];
     var _class_data = [];
     for (var _user in _sequence) {
@@ -197,7 +182,8 @@ DGP.build_lag_data = function (_profile, _sequence, _lag_config) {
                 var _seq = _user_seq[_i+_j];
                 for (var _s in _seq) {
                     if (_s !== "time") {
-                        _d["lag"+_j+"_" + _s] = _seq[_s];
+                        var _key = DGP.build_lag_key(_j, _s);
+                        _d[_key] = _seq[_s];
                     }
                 }
             }
@@ -208,11 +194,11 @@ DGP.build_lag_data = function (_profile, _sequence, _lag_config) {
                     _d[_p] = _user_profile[_p];
                 }
                 else {
-                    var _class = [_user_profile[_p]];
+                    var _class = _user_profile[_p];
                     // 計算他離結尾還有多少距離
                     var _end_steps = _user_seq.length - _lag_config - _i;
-                    _class = _class * _config_end_distance_weight * (1/_end_steps);
-                    _class_data.push([_class]);
+                    _class = [(1/_end_steps), _class];
+                    _class_data.push(_class);
                 }
             }
             
@@ -292,6 +278,20 @@ DGP.reverse_dict = function (_cat_dict) {
     return _rdict;
 };
 
+/**
+ * 建立類別轉換成數字矩陣的字典檔案
+ * @param {JSON} _json
+ * @returns {JSON}
+ */
+DGP.build_matrix_dict = function (_json) {
+    //DGP.console_log("build_matrix_dict", _json);
+    var _dict = DGP.build_lag_dict(_json);
+    //DGP.console_log("build_lag_dict", _dict);
+    var _rdict = DGP.reverse_dict(_dict);
+    DGP.console_log("reverse_dict", _rdict);
+    return _rdict;
+};
+
 DGP.create_cat_feature = function (_cat_json, _cat_rdict) {
     var _array = [];
     for (var _i = 0; _i < _cat_rdict["_length"]; _i++) {
@@ -320,12 +320,17 @@ DGP.create_cat_feature = function (_cat_json, _cat_rdict) {
 };
 
 DGP.convert_cat_to_numeric = function (_lag_data, _cat_rdict) {
-    var _numeric_lag_data = [];
-    for (var _i = 0; _i < _lag_data.length; _i++) {
-        var _d = DGP.create_cat_feature(_lag_data[_i], _cat_rdict);
-        _numeric_lag_data.push(_d);
+    if (Array.isArray(_lag_data) === false) {
+        return DGP.create_cat_feature(_lag_data, _cat_rdict);
     }
-    return _numeric_lag_data;
+    else {
+        var _numeric_lag_data = [];
+        for (var _i = 0; _i < _lag_data.length; _i++) {
+            var _d = DGP.create_cat_feature(_lag_data[_i], _cat_rdict);
+            _numeric_lag_data.push(_d);
+        }
+        return _numeric_lag_data;
+    }
 };
 
 // ---------------------------------
@@ -406,12 +411,19 @@ DGP.parse_next_points = function (_sequence) {
 
 // -----------------------
 
-DGP.start_generative_path = function (_start_points, _end_points, _next_points, _lag_config, _cat_rdict, _model) {
+DGP.build_generative_path = function (_start_points, _end_points, _next_points, _lag_config, _predict_function) {
     var _path = [];
     var _lag_data = [];
     
-    var _max_length = 500;
+    var _max_length = FPF_FORM.get_value_float("#config_path_max_length");
     var _goal = false;
+    
+    var _predict_target = function (_next_point) {
+        var _test_data = DGP.build_test_data(_lag_data, _next_point);
+        //console.log(_test_data);
+        var _y = _predict_function(_test_data);
+        return _y;
+    };
     
     // --------------------------
     // 隨機從_start_points中取出一個
@@ -446,11 +458,11 @@ DGP.start_generative_path = function (_start_points, _end_points, _next_points, 
             _path.push(_next_point);
         }
         else {
-            var _y1 = DGP.predict_y(_lag_data, _next_point, _model, _cat_rdict);
+            var _y1 = _predict_target(_next_point);
             //console.log(["先走這個", _y1, _next_point]);
             while (_next_list.length > 0) {
                 var _next_point2 = FPF_ARRAY.array_pick_random_one_remove(_next_list);
-                var _y2 = DGP.predict_y(_lag_data, _next_point2, _model, _cat_rdict);
+                var _y2 = _predict_target(_next_point);
                 //console.log(["挑一個試試看", _y2, _next_point2]);
                 
                 if (_y2 > _y1) {
@@ -489,6 +501,13 @@ DGP.start_generative_path = function (_start_points, _end_points, _next_points, 
 
 // ---------------------------------------------
 
+/**
+ * @deprecated 20170616 不使用了
+ * @param {type} _lag_data
+ * @param {type} _next_point
+ * @param {type} _cat_rdict
+ * @returns {DGP.create_cat_feature._array|Array}
+ */
 DGP.convert_lag_data_to_x = function (_lag_data, _next_point, _cat_rdict) {
     var _lag_data1 = FPF_ARRAY.array_clone(_lag_data);
     _lag_data1.push(_next_point);
@@ -507,15 +526,133 @@ DGP.convert_lag_data_to_x = function (_lag_data, _next_point, _cat_rdict) {
     return _x;
 };
 
+DGP.build_test_data = function (_lag_data, _next_point) {
+    var _test_array = FPF_ARRAY.array_clone(_lag_data);
+    _test_array.push(_next_point);
+    
+    var _result = {};
+    for (var _l = 0; _l < _test_array.length; _l++) {
+        var _json = JSON.parse(_test_array[_l]);
+        for (var _key in _json) {
+            _result[DGP.build_lag_key(_l, _key)] = _json[_key];
+        }
+    }
+    return _result;
+};
+
+DGP.build_lag_key = function (_lag, _key) {
+    return "lag" + _lag + "_" + _key;
+};
+
+
+/**
+ * 預測y，但之後不使用
+ * @deprecated 20170616
+ * @param {type} _lag_data
+ * @param {type} _next_point
+ * @param {type} _model
+ * @param {type} _cat_rdict
+ * @returns {@arr;_y|DGP.predict_y._y|Number|DGP.predict_y._config_end_distance_weight}
+ */
 DGP.predict_y = function (_lag_data, _next_point, _model, _cat_rdict) {
     var _x = DGP.convert_lag_data_to_x(_lag_data, _next_point, _cat_rdict);
     //console.log(_x);
     var _y = _model.predict([_x]);
     
     // 直接取得一個數值
-    while (typeof(_y) === "object") {
+    //while (typeof(_y) === "object") {
+    //    _y = _y[0];
+    //}
+    
+    if (typeof(_y) === "object") {
         _y = _y[0];
+
+        var _config_end_distance_weight = FPF_FORM.get_value_float("#config_end_distance_weight");
+        // 這時候應該會有兩個值
+        var _result = 0;
+        for (var _i = 0; _i < _y.length; _i++) {
+            if (_i === 0) {
+                _result = _result + _y[_i] * _config_end_distance_weight;
+            }
+            else {
+                _result = _result + _y[_i];
+            }
+        }
+    }
+    return _result;
+};
+
+DGP.defuzzication_target_martix = function (_target_data, _config_end_distance_weight) {
+    if (typeof(_target_data) !== "object") {
+        return _target_data;
+    }
+    else {
+        _target_data = _target_data[0];
+
+        
+        // 這時候應該會有兩個值
+        var _result = 0;
+        for (var _i = 0; _i < _target_data.length; _i++) {
+            if (_i === 0) {
+                _result = _result + _target_data[_i] * _config_end_distance_weight;
+            }
+            else {
+                _result = _result + _target_data[_i];
+            }
+        }
+        return _result;
+    }
+};
+
+// ------------------------------
+
+/**
+ * 產生一個預測模型
+ * @param {JSON} _train_data
+ * @param {JSON} _target_data
+ * @returns {DGP.build_predict_function._predict_function}
+ */
+DGP.build_predict_function = function (_model_type, _train_data, _target_data, _config_end_distance_weight) {
+    var _train_rdict = DGP.build_matrix_dict(_train_data);
+    DGP.console_log("train_rdict", _train_rdict);
+    
+    var _numeric_train_data = DGP.convert_cat_to_numeric(_train_data, _train_rdict);
+    DGP.console_log("numeric_train_data", _numeric_train_data[0]);
+    
+    var _target_rdict = DGP.build_matrix_dict(_target_data);
+    DGP.console_log("train_rdict", _target_rdict);
+    
+    var _numeric_target_data = DGP.convert_cat_to_numeric(_target_data, _target_rdict);
+    DGP.console_log("numeric_target_data", _numeric_target_data[0]);
+    
+    // ------------------------------------
+    var _model = MODELS.get_model();
+    //console.log(["model", _model]);
+    if (_model === null) {
+        if (_model_type === "radio_model_mlp") {
+            // 建立類神經網路
+            _model = MODELS.build_mlp_model(_numeric_train_data, _numeric_target_data);
+        }
+        else if (_model_type === "radio_model_random") {
+            // 建立隨機模型
+            _model = MODELS.build_random_model(_numeric_train_data, _numeric_target_data);
+        }
     }
     
-    return _y;
+    /**
+     * 產生一個預測功能
+     * @param {JSON} _test_data
+     * @returns {Number}
+     */
+    var _predict_function = function (_test_data) {
+        //DGP.console_log("_predict_function", _train_rdict);
+        //DGP.console_log("_test_data", _test_data);
+        var _numeric_test_data = DGP.convert_cat_to_numeric(_test_data, _train_rdict);
+        //DGP.console_log("_numeric_test_data", _numeric_test_data);
+        var _target_data = _model.predict([_numeric_test_data]);
+        var _result = DGP.defuzzication_target_martix(_target_data, _config_end_distance_weight);
+        return _result;
+    };
+    
+    return _predict_function;
 };
