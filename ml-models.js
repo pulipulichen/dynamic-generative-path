@@ -39,7 +39,7 @@ MODELS.build_mlp_model = function (_x, _y) {
         'label' : _y,
         'n_ins' : _x[0].length,
         'n_outs' : _y[0].length,
-        'hidden_layer_sizes' : [_x[0].length-1]
+        'hidden_layer_sizes' : _hl
     });
 
     mlp.set('log level',1); // 0 : nothing, 1 : info, 2 : warning.

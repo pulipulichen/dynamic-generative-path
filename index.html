@@ -63,15 +63,15 @@
 
 <div class="ui bottom attached  tab segment" data-tab="textarea">
     <div class="field">
-        <label for="input_mode_profile">Profile CSV file: </label>
+        <label for="input_mode_profile">Profile CSV file: (<a href="profile.csv" download>example</a>) </label>
         <textarea class="input-mode textarea" id="input_mode_textarea_profile" onfocus="this.select()"></textarea>    
     </div>
     <div class="field">
-        <label for="input_mode_textarea_sequence">Sequence CSV file: </label>
+        <label for="input_mode_textarea_sequence">Sequence CSV file: (<a href="sequence.csv" download>example</a>) </label>
         <textarea class="input-mode textarea reset-saved-model" id="input_mode_textarea_sequence" onfocus="this.select()"></textarea>
     </div>
     <div class="field">
-        <label for="input_mode_textarea_target">Target CSV file: </label>
+        <label for="input_mode_textarea_target">Target CSV file: (<a href="target.csv" download>example</a>)</label>
         <textarea class="input-mode textarea" id="input_mode_textarea_target" onfocus="this.select()"></textarea>
     </div>
 </div>
@@ -105,30 +105,36 @@
                />
     </div>
 
+    <!-- ------------------------------ -->
+    <hr />
+    
     <div class="inline field">
         <label for="lag_config">Lag Config:</label>
-        <input type="text" name="lag_config" id="lag_config" value="3"  class="reset-saved-model" />
+        <input type="text" name="lag_config" id="lag_config" 
+               value="3"  class="reset-saved-model" />
     </div>
     <div class="inline field">
         <label for="config_batch_size">Batch size:</label>
-        <input type="text" name="config_batch_size" id="config_batch_size" value="1" />
+        <input type="text" name="config_batch_size" id="config_batch_size" 
+               value="1" />
     </div>
     <div class="inline field">
         <label for="config_end_distance_weight">End distance weight:</label>
-        <input type="text" name="config_end_distance_weight" id="config_end_distance_weight" value="1" />
+        <input type="text" name="config_end_distance_weight" id="config_end_distance_weight" value="100" />
     </div>
     <div class="inline field">
         <label for="config_path_max_length">Max path max length:</label>
         <input type="text" name="config_path_max_length" id="config_path_max_length" value="500" />
     </div>
     
+    <!-- ------------------------------ -->
     <hr />
 
     <div class="inline field">
         <input type="radio" name="model" id="radio_model_random" value="radio_model_random" class="reset-saved-model" />
         <label for="radio_model_random">Random Model</label>
 
-        <input checked="checked"  type="radio" name="model" id="radio_model_mlp" value="radio_model_mlp" class="reset-saved-model" />
+        <input checked="checked" type="radio" name="model" id="radio_model_mlp" value="radio_model_mlp" class="reset-saved-model" />
         <label for="radio_model_mlp">Multilayer perceptron (MLP)</label>
     </div>
     
@@ -138,7 +144,7 @@
     </div>
     <div class="inline field">
         <label for="config_mlp_epochs">MLP epochs:</label>
-        <input type="text" name="config_mlp_epochs" id="config_mlp_epochs" value="10" class="reset-saved-model" />
+        <input type="text" name="config_mlp_epochs" id="config_mlp_epochs" value="1000" class="reset-saved-model" />
     </div>
     
     <div class="inline field">

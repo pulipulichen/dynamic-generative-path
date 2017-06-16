@@ -63,8 +63,12 @@ DGP.feature_normalize = function (_array) {
             // 表示是數值
             var _min = _feature_min[_key];
             var _interval = _feature_interval[_key];
-            
-            _value = (_value - _min) / _interval;
+            if (_interval > 0) {
+                _value = (_value - _min) / _interval;
+            }
+            else {
+                _value = 0;
+            }
             //console.log(["調整", _value, _min, _interval])
         }
         return _value;
@@ -144,9 +148,9 @@ DGP.reverse_dict = function (_cat_dict) {
  * @returns {JSON}
  */
 DGP.build_matrix_dict = function (_json) {
-    //DGP.console_log("build_matrix_dict", _json);
+    DGP.console_log("build_matrix_dict", _json);
     var _dict = DGP.build_lag_dict(_json);
-    //DGP.console_log("build_lag_dict", _dict);
+    DGP.console_log("build_lag_dict", _dict);
     var _rdict = DGP.reverse_dict(_dict);
     DGP.console_log("reverse_dict", _rdict);
     return _rdict;
