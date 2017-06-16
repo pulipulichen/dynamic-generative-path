@@ -67,8 +67,7 @@ DGP.main = function () {
     // 開始進行生成
     
     var _mock_profile = DGP.generate_mock_profile(_profile);
-    DGP.console_log("mock", _mock_profile);
-    return;
+    //DGP.console_log("mock", _mock_profile);
     
     var _goal_array = [];
     var _path_result_array = [];
@@ -256,18 +255,41 @@ DGP.console_log = function (_title, _message) {
 
 // ----------------------
 
-DGP.build_lag_data = function (_profile, _sequence , _target, _lag_config) {
+DGP.build_lag_data = function (_profile, _sequence, _target, _lag_config) {
     var _data = [];
     var _class_data = [];
+    
+    var _process_target_data = function (_end_steps, _user_target) {
+        var _target_data = {};
+        if (_end_steps === 0) {
+            _end_steps = 0.5;
+        }
+        _end_steps = Math.sqrt(_end_steps);
+        _end_steps = 1 /_end_steps;
+        //console.log(["end_steps", _end_steps]);
+        //_end_steps =  Math.log(_end_steps);
+        _target_data["end_steps"] = _end_steps;
+        for (var _p in _user_target) {
+            //_target_data[_p] = _user_target[_p];
+        }
+        return _target_data;
+    };
+    
+    // ------------------------------
+    
+    //console.log(_sequence);
+    //console.log(_target);
     for (var _user in _sequence) {
+        var _user_seq = _sequence[_user];
+        //console.log([_user, _user_seq.length, typeof(_target[_user])]);
         if (typeof(_target[_user]) === "undefined") {
             continue;
         }
         var _user_profile = _profile[_user];
-        var _user_seq = _sequence[_user];
         var _user_target = _target[_user];
         
-        for (var _i = 0; _i < _user_seq.length - _lag_config; _i++) {
+        //console.log([_user, _user_seq.length, _lag_config]);
+        for (var _i = 0; _i < (_user_seq.length - _lag_config); _i++) {
             var _d = {};
             
             // 加入lag的資料
@@ -287,23 +309,21 @@ DGP.build_lag_data = function (_profile, _sequence , _target, _lag_config) {
             }
             
             // 加入target的資料
-            var _target = {};
             var _end_steps = _user_seq.length - _lag_config - _i;
-            _end_steps = Math.log(_end_steps);
-            _target["end_steps"] = _end_steps;
-            for (var _p in _user_target) {
-                _target[_p] = _user_target[_p];
-            }
-            _class_data.push(_target);
+            var _target_data = _process_target_data(_end_steps, _user_target);
+            //console.log(["target", _user, JSON.stringify(_target_data)]);
+            _class_data.push(_target_data);
             
             _data.push(_d);
-        }
+        }   // for (var _i = 0; _i < (_user_seq.length - _lag_config); _i++) {
     }
     
-    return {
+    var _result = {
         "lag_data": _data,
         "class_data": _class_data
     };
+    
+    return _result;
 };
 
 // ---------------------------------
@@ -403,7 +423,7 @@ DGP.build_generative_path = function (_profile, _start_points, _end_points, _nex
      */
     var _enable_same_next = false;
     
-    var _predict_result_limit = 2;
+    var _predict_result_limit = 100;
     
     var _path = [];
     var _lag_data = [];
@@ -461,7 +481,7 @@ DGP.build_generative_path = function (_profile, _start_points, _end_points, _nex
         _predict_result.sort(function (_a, _b) {
             return (_b.y - _a.y);
         });
-        DGP.console_log("_predict_result", _predict_result);
+        //DGP.console_log("_predict_result", _predict_result);
         
         return _predict_result[0].step;
     };
@@ -483,7 +503,7 @@ DGP.build_generative_path = function (_profile, _start_points, _end_points, _nex
             console.log(["無路可走", _path.length, _path]);
             break;
         }
-        console.log(["before", _before_point, _next_list]);
+        //console.log(["before", _before_point, _next_list]);
         
         //console.log(_next_list);
         
@@ -512,12 +532,12 @@ DGP.build_generative_path = function (_profile, _start_points, _end_points, _nex
         }
         
         if (_path.length > _max_length) {
-            console.log("失敗了，沒有走到終點");
+            console.log(["失敗了，沒有走到終點", _path[0], _path[1], _path]);
             break;
         }
         
         if ($.inArray(_next_point, _end_points) > -1) {
-            console.log(["成功走到終點", _path.length, _path]);
+            console.log(["成功走到終點", _path[0], _path[1], _path.length, _path]);
             _goal = true;
             break;
         }
