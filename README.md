@@ -11,4 +11,4 @@ Demo: https://pulipulichen.github.io/dynamic-generative-path/
 - 把重複的next也納入考量
 - 還沒考慮背景變項
 - 隨機挑選最多100個來比較
-- 將變項壓縮成為0-1之間
+- 將變項壓縮成為0-1之間，正規化

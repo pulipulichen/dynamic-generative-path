@@ -44,3 +44,4 @@ FPF_ARRAY.array_clone = function (_array) {
     }
     
 };
+

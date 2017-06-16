@@ -7,9 +7,12 @@ DGP.main = function () {
 // ---------------------------------------
     // 將CSV轉換成JSON
     var _profile = DGP.parse_profile($("#input_mode_textarea_profile").val());
+    _profile = DGP.feature_normalize(_profile);
     DGP.console_log("profile", _profile);
     var _sequence = DGP.parse_sequence($("#input_mode_textarea_sequence").val());
+    _sequence = DGP.feature_normalize(_sequence);
     DGP.console_log("sequence", _sequence);
+    return;
     var _target = DGP.parse_profile($("#input_mode_textarea_target").val());
     DGP.console_log("sequence", _target);
     
@@ -210,127 +213,6 @@ DGP.build_lag_data = function (_profile, _sequence, _lag_config) {
         "lag_data": _data,
         "class_data": _class_data
     };
-};
-
-// --------------------------------------
-
-/**
- * 整理成類別資料
- * @deprecated 20170616
- * @param {JSON} _sequence
- * @returns {Array}
- */
-DGP.parse_event_dict = function (_sequence) {
-    var _dict = [];
-    for (var _user in _sequence) {
-        var _user_seq = _sequence[_user];
-        for (var _u = 0; _u < _user_seq.length; _u++) {
-            var _seq = _user_seq[_u];
-            
-            for (var _v in _seq) {
-                if (isNaN(_seq[_v])) {
-                    // 如果是類別變數
-                    var _value = _seq[_v];
-                    _value = _v + "_" + _value;
-                    if ($.inArray(_value, _dict) === -1) {
-                        _dict.push(_value);
-                    }
-                }
-            }
-        }
-    }
-    
-    _dict.sort();
-    
-    return _dict;
-};
-
-DGP.build_lag_dict = function (_lag_data) {
-    var _dict = [];
-    for (var _i = 0; _i < _lag_data.length; _i++) {
-        var _seq = _lag_data[_i];
-            
-        for (var _v in _seq) {
-            var _value = _v;
-            if (isNaN(_seq[_v])) {
-                // 如果是類別變數
-                var _value = _seq[_v];
-                _value = _v + "_" + _value;
-            }
-            if ($.inArray(_value, _dict) === -1) {
-                _dict.push(_value);
-            }
-        }   
-    }
-    
-    _dict.sort();
-    
-    return _dict;
-};
-
-DGP.reverse_dict = function (_cat_dict) {
-    var _rdict = {};
-    
-    for (var _i = 0; _i < _cat_dict.length; _i++) {
-        _rdict[_cat_dict[_i]] = _i;
-    }
-    _rdict["_length"] = _cat_dict.length;
-    return _rdict;
-};
-
-/**
- * 建立類別轉換成數字矩陣的字典檔案
- * @param {JSON} _json
- * @returns {JSON}
- */
-DGP.build_matrix_dict = function (_json) {
-    //DGP.console_log("build_matrix_dict", _json);
-    var _dict = DGP.build_lag_dict(_json);
-    //DGP.console_log("build_lag_dict", _dict);
-    var _rdict = DGP.reverse_dict(_dict);
-    DGP.console_log("reverse_dict", _rdict);
-    return _rdict;
-};
-
-DGP.create_cat_feature = function (_cat_json, _cat_rdict) {
-    var _array = [];
-    for (var _i = 0; _i < _cat_rdict["_length"]; _i++) {
-        _array.push(0);
-    }
-    
-    for (var _cat in _cat_json) {
-        var _value = _cat_json[_cat];
-        var _key = _cat;
-        if (isNaN(_value)) {
-            _key = _cat + "_" + _value;
-        }
-        
-        if (typeof(_cat_rdict[_key]) !== "undefined") {
-            var _i = _cat_rdict[_key];
-            if (isNaN(_value)) {
-                _array[_i] = 1;
-            }
-            else {
-                _array[_i] = _value;
-            }
-        }
-    }
-    
-    return _array;
-};
-
-DGP.convert_cat_to_numeric = function (_lag_data, _cat_rdict) {
-    if (Array.isArray(_lag_data) === false) {
-        return DGP.create_cat_feature(_lag_data, _cat_rdict);
-    }
-    else {
-        var _numeric_lag_data = [];
-        for (var _i = 0; _i < _lag_data.length; _i++) {
-            var _d = DGP.create_cat_feature(_lag_data[_i], _cat_rdict);
-            _numeric_lag_data.push(_d);
-        }
-        return _numeric_lag_data;
-    }
 };
 
 // ---------------------------------
