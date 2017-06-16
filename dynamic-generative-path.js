@@ -47,7 +47,7 @@ DGP.main = function () {
     
     // ------------------------------------
     var _model = MODELS.get_model();
-    console.log(["model", _model]);
+    //console.log(["model", _model]);
     if (_model === null) {
         var _radio_model = $('input[name="model"]:checked').val();
         if (_radio_model === "radio_model_mlp") {
@@ -435,10 +435,10 @@ DGP.start_generative_path = function (_start_points, _end_points, _next_points, 
         var _next_point = FPF_ARRAY.array_pick_random_one_remove(_next_list);
         
         // 關閉已知陣列的檢查，這個雖然可以幫助快點走到終點，但不一定好
-        //while (_next_list.length > 0 && $.inArray(_next_point, _lag_data) > -1) {
-        //    _next_point = DGP_ARRAY.array_pick_random_one_remove(_next_list);
-        //    //console.log(["重複了，挑下一個", _next_point]);
-        //}
+        while (_next_list.length > 0 && $.inArray(_next_point, _lag_data) > -1) {
+            _next_point = FPF_ARRAY.array_pick_random_one_remove(_next_list);
+            //console.log(["重複了，挑下一個", _next_point]);
+        }
         
         //console.log(_next_point);
         if (_lag_data.length < _lag_config-1) {

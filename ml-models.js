@@ -12,7 +12,7 @@ MODELS.set_model = function (_model) {
 };
 
 MODELS.reset_model = function () {
-    console.log("清除模型");
+    //console.log("清除模型");
     MODELS._saved_model = null;
     return this;
 };

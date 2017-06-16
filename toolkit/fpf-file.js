@@ -32,7 +32,8 @@ FPF_FILE.load_file = function(evt) {
             return;
         }
         _result =  evt.target.result;
-        $(_input.attr("set_filename")).val(_result);
+        $(_input.attr("set_selector")).val(_result);
+        _input.val("");
     };
     
     reader.readAsText(evt.target.files[0]);

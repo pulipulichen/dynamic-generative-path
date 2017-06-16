@@ -40,7 +40,7 @@ $(function () {
     //_load_textarea();
 
     $.get("profile.csv", function (_csv) {
-        $("#input_mode_profile").val(_csv);
+        $("#input_mode_textarea_profile").val(_csv);
         $.get("sequence.csv", function (_csv) {
             $("#input_mode_textarea_sequence").val(_csv);
             $.get("target.csv", function (_csv) {
