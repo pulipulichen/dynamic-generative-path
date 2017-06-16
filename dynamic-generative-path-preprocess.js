@@ -30,7 +30,7 @@ DGP.feature_normalize = function (_array) {
     // --------------------------
     // 先找最大值與最小值
     _each(function (_key, _value) {
-        if (isNaN(_value) === false) {
+        if (isNaN(_value) === false && _key !== "time") {
             // 表示是數值
             if (typeof(_feature_max[_key]) === "undefined") {
                 _feature_max[_key] = _value;
@@ -59,7 +59,7 @@ DGP.feature_normalize = function (_array) {
     // --------------------------
     // 計算正規化
     _each(function (_key, _value) {
-        if (isNaN(_value) === false) {
+        if (isNaN(_value) === false && _key !== "time") {
             // 表示是數值
             var _min = _feature_min[_key];
             var _interval = _feature_interval[_key];

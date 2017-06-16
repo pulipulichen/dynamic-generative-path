@@ -45,3 +45,6 @@ FPF_ARRAY.array_clone = function (_array) {
     
 };
 
+FPF_ARRAY.get_last = function (_array) {
+    return _array[(_array.length-1)];
+};
