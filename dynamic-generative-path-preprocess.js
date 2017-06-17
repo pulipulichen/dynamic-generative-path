@@ -172,7 +172,11 @@ DGP.create_cat_feature = function (_cat_json, _cat_rdict) {
         if (typeof(_cat_rdict[_key]) !== "undefined") {
             var _i = _cat_rdict[_key];
             if (isNaN(_value)) {
-                _array[_i] = 1;
+                
+                //_array[_i] = 1;
+                
+                // 拉低位置的權重
+                _array[_i] = 1 / DGP.config.max_sequence_length;
             }
             else {
                 _array[_i] = _value;

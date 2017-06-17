@@ -11,6 +11,7 @@ DGP.config = {
     //"finish_weight": 100,
     "max_sequence_length": 100,
     "min_sequence_length": 10,
+    "max_fail_count": 1
 };
 DGP.predict_function = null;
 DGP.start_steps = [];
@@ -126,7 +127,12 @@ DGP.main = function () {
                 break;
             }
             else {
-                _goal_array.push(0);
+                //_goal_array.push(0);
+                if (_fail_count > DGP.max_fail_count) {
+                    console.log("超過極限");
+                    return;
+                }
+                
                 console.log("mock profile" + JSON.stringify(_mock_profile));
                 console.log(_fail_count + "失敗了...準備建立壞的例子");
                 DGP.add_fail_path_to_model_data(_mock_profile, _path);
@@ -221,26 +227,6 @@ DGP.console_log = function (_title, _message) {
 
 // ----------------------
 
-/**
- * @deprecated 20170617 Pulipuli Chen
- * @param {type} _end_steps
- * @param {type} _user_target
- * @returns {unresolved}
- */
-DGP.build_target_data = function (_end_steps, _user_target) {
-    var _target_data = {};
-    //if (_end_steps === 0) {
-    //    _end_steps = 0.5;
-    //}
-    //_end_steps = Math.sqrt(_end_steps);
-    //_end_steps = 1 /_end_steps;
-    //console.log(["end_steps", _end_steps]);
-    //_end_steps =  Math.log(_end_steps);
-    
-    
-    return _target_data;
-};
-
 DGP.build_model_data = function () {
     var _data = [];
     var _class_data = [];
@@ -252,8 +238,8 @@ DGP.build_model_data = function () {
     
     var _max_end_distance = 0;
     
-    var _target_weight = DGP.config.max_sequence_length;
-    var _finish_weight = DGP.config.max_sequence_length;
+    //var _target_weight = DGP.config.max_sequence_length;
+    //var _finish_weight = DGP.config.max_sequence_length;
         
     // ------------------------------
     
@@ -299,11 +285,11 @@ DGP.build_model_data = function () {
             //console.log(_end_steps);
             
             var _target_data = {};         
-            _target_data["end_distance"] = _end_steps;
-            _target_data["finish"] = 1 * _finish_weight;
+            _target_data["_end_distance"] = _end_steps;
+            _target_data["_finish"] = 1;
             if (DGP.target_only_end_distance === false) {
                 for (var _p in _user_target) {
-                    _target_data[_p] = _user_target[_p] * _target_weight;
+                    _target_data[_p] = _user_target[_p];
                 }
             }
             //console.log(["target", _user, JSON.stringify(_target_data)]);
@@ -600,17 +586,21 @@ DGP.build_lag_key = function (_lag, _key) {
     return "lag" + _lag + "_" + _key;
 };
 
-DGP.defuzzication_target_martix = function (_target_data) {
+DGP.defuzzication_target_martix = function (_target_data, _target_dict) {
     if (typeof(_target_data) !== "object") {
         return _target_data;
     }
     else {
         _target_data = _target_data[0];
-
+        
+        //console.log(["預測結果", _target_data.join("|")]);
+        
         // 這時候應該會有兩個值
         var _result = 0;
         //DGP.console_log("defuzzication_target_martix", _target_data);
+        var _r = {};
         for (var _i = 0; _i < _target_data.length; _i++) {
+            var _key = _target_dict[_i];
             /*
             if (_i === 0) {
                 _result = _result + _target_data[_i];
@@ -619,8 +609,18 @@ DGP.defuzzication_target_martix = function (_target_data) {
                 _result = _result + _target_data[_i];
             }
             */
-            _result = _result + _target_data[_i];
+            if (_key === "_end_distance") {
+                _result = _result + _target_data[_i] * 0.01;
+            }
+            else if (_key === "_finish") {
+                _result = _result + _target_data[_i] * 100;
+            }
+            else {
+                _result = _result + _target_data[_i];
+            }
+            _r[_key] = _result;
         }
+        //console.log(JSON.stringify(_r));
         return _result;
     }
 };
@@ -642,7 +642,9 @@ DGP.build_predict_function = function (_model_type) {
     var _numeric_train_data = DGP.convert_cat_to_numeric(_train_data, _train_rdict);
     //DGP.console_log("numeric_train_data", _numeric_train_data[0]);
     
-    var _target_rdict = DGP.build_matrix_dict(_target_data);
+    //var _target_rdict = DGP.build_matrix_dict(_target_data);
+    var _target_dict = DGP.build_lag_dict(_target_data);
+    var _target_rdict = DGP.reverse_dict(_target_dict);
     //DGP.console_log("_target_rdict", _target_rdict);
     
     var _numeric_target_data = DGP.convert_cat_to_numeric(_target_data, _target_rdict);
@@ -673,7 +675,7 @@ DGP.build_predict_function = function (_model_type) {
         var _numeric_test_data = DGP.convert_cat_to_numeric(_test_data, _train_rdict);
         //DGP.console_log("_numeric_test_data", _numeric_test_data);
         var _target_data = _model.predict([_numeric_test_data]);
-        var _result = DGP.defuzzication_target_martix(_target_data);
+        var _result = DGP.defuzzication_target_martix(_target_data, _target_dict);
         return _result;
     };
     
@@ -712,7 +714,7 @@ DGP.add_fail_path_to_model_data = function (_user_profile, _fail_path) {
 };
 
 DGP.build_train_data = function (_lag_data, _user_profile) {
-    var _profile_weight = DGP.config.max_sequence_length;
+    //var _profile_weight = DGP.config.max_sequence_length;
     
     var _d = {};
     for (var _j = 0; _j < _lag_data.length; _j++) {
@@ -729,7 +731,7 @@ DGP.build_train_data = function (_lag_data, _user_profile) {
 
     // 加入profile的資料
     for (var _p in _user_profile) {
-        _d[_p] = _user_profile[_p] * _profile_weight;
+        _d[_p] = _user_profile[_p];
     }
     
     return _d;
