@@ -9,6 +9,7 @@ DGP.predict_function = null;
 DGP.start_steps = [];
 DGP.end_steps = [];
 DGP.next_steps_dict = [];
+DGP.target_only_end_distance = true;
 
 DGP.main = function () {
     var _result = [];
@@ -51,7 +52,7 @@ DGP.main = function () {
     DGP.console_log("train_data[0]", [_model_data.train[0], _model_data.target[0]]);
     DGP.console_log("train_data[1]", [_model_data.train[1], _model_data.target[1]]);
     DGP.console_log("train_data last", [FPF_ARRAY.get_last(_model_data.train),  FPF_ARRAY.get_last(_model_data.target)]);
-    
+    return;
     // --------------------------------------------
     
     var _model_type = $('input[name="model"]:checked').val();
@@ -266,19 +267,23 @@ DGP.console_log = function (_title, _message) {
 
 // ----------------------
 
+/**
+ * @deprecated 20170617 Pulipuli Chen
+ * @param {type} _end_steps
+ * @param {type} _user_target
+ * @returns {unresolved}
+ */
 DGP.build_target_data = function (_end_steps, _user_target) {
     var _target_data = {};
-    if (_end_steps === 0) {
-        _end_steps = 0.5;
-    }
-    _end_steps = Math.sqrt(_end_steps);
-    _end_steps = 1 /_end_steps;
+    //if (_end_steps === 0) {
+    //    _end_steps = 0.5;
+    //}
+    //_end_steps = Math.sqrt(_end_steps);
+    //_end_steps = 1 /_end_steps;
     //console.log(["end_steps", _end_steps]);
     //_end_steps =  Math.log(_end_steps);
-    _target_data["end_steps"] = _end_steps;
-    for (var _p in _user_target) {
-        //_target_data[_p] = _user_target[_p];
-    }
+    
+    
     return _target_data;
 };
 
@@ -290,6 +295,8 @@ DGP.build_model_data = function () {
     var _sequence = DGP.sequence;
     var _target = DGP.target;
     var _lag_config = DGP.config.lag_length;
+    
+    var _max_end_distance = 0;
         
     // ------------------------------
     
@@ -297,6 +304,7 @@ DGP.build_model_data = function () {
     //console.log(_target);
     for (var _user in _sequence) {
         var _user_seq = _sequence[_user];
+        
         //console.log([_user, _user_seq.length, typeof(_target[_user])]);
         if (typeof(_target[_user]) === "undefined") {
             continue;
@@ -304,27 +312,23 @@ DGP.build_model_data = function () {
         var _user_profile = _profile[_user];
         var _user_target = _target[_user];
         
+        if (_max_end_distance < _user_seq.length) {
+            _max_end_distance = _user_seq.length;
+        }
+        
         //console.log([_user, _user_seq.length, _lag_config]);
-        for (var _i = 0; _i < _user_seq.length; _i++) {
+        for (var _i = -1; _i < _user_seq.length; _i++) {
             // 取得目前的seq
             var _lag_seq = [];
-            var _current_seq = _user_seq[_i];
-            _lag_seq.push(_current_seq);
             
-            for (var _j = 1; _j < _lag_config; _j++) {
-                // 嘗試取得前j個
-                var _index = _i - _j;
-                var _seq;
-                if (_index < 0) {
-                    _seq = DGP.create_null_seq(_current_seq);
-                }
-                else {
-                    _seq = _user_seq[_index];
+            for (var _j = _lag_config; _j >= 0; _j--) {
+                var _current_index = _i - _j;
+                var _seq = DGP.create_null_seq();
+                if (typeof(_user_seq[_current_index]) === "object") {
+                    _seq = _user_seq[_current_index];
                 }
                 _lag_seq.push(_seq);
             }
-            
-            _lag_seq.reverse();
             
             // --------------------
             var _d = {};
@@ -351,18 +355,40 @@ DGP.build_model_data = function () {
             // -----------------------------------------
             
             // 加入target的資料
-            var _end_steps = _user_seq.length - _i;
-            var _target_data = DGP.build_target_data(_end_steps, _user_target);
+            //var _end_steps = _user_seq.length - _i - 1;
+            var _end_steps = (_i + 1) / (_user_seq.length);
+            //console.log(_end_steps);
+            
+            var _target_data = {};         
+            _target_data["end_distance"] = _end_steps;
+            if (DGP.target_only_end_distance === false) {
+                for (var _p in _user_target) {
+                    _target_data[_p] = _user_target[_p];
+                }
+            }
             //console.log(["target", _user, JSON.stringify(_target_data)]);
             _class_data.push(_target_data);
         }   // for (var _i = 0; _i < (_user_seq.length - _lag_config); _i++) {
     }
     
+    _max_end_distance = _max_end_distance + 1;
+    
+    // 全部減去最大距離
+    /*
+    var _max = 0;
+    var _min = 0;
+    for (var _i = 0; _i < _class_data.length; _i++) {
+        _class_data[_i]["end_distance"] = _max_end_distance - _class_data[_i]["end_distance"];
+        console.log(_class_data[_i]["end_distance"]);
+    }
+    console.log(["最大距離", _max_end_distance]);
+    */
+    
     var _result = {
         "train": _data,
         "target": _class_data
     };
-    
+   
     return _result;
 };
 

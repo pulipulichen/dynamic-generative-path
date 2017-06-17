@@ -87,5 +87,8 @@ DGP.parse_next_steps_dict = function () {
             }
         }
     }
+    
+    _points["null"] = DGP.start_steps;
+    
     return _points;
 };
