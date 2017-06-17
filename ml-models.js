@@ -52,17 +52,19 @@ MODELS.build_mlp_model = function (_x, _y) {
         'hidden_layer_sizes' : _hidden_layer_sizes
     });
 
-    mlp.set('log level', 1); // 0 : nothing, 1 : info, 2 : warning.
-    //mlp.set('log level', 0); // 0 : nothing, 1 : info, 2 : warning.
+    //mlp.set('log level', 1); // 0 : nothing, 1 : info, 2 : warning.
+    mlp.set('log level', 0); // 0 : nothing, 1 : info, 2 : warning.
 
     var _lr = FPF_FORM.get_value_float("#config_mlp_lr");
     var _epochs = FPF_FORM.get_value_float("#config_mlp_epochs");
     _epochs = _epochs * _x.length;
 
+    console.log("開始訓練");
     mlp.train({
         'lr' : _lr,
         'epochs' : _epochs
     });
+    console.log("訓練完成");
     
     this.set_model(mlp);
     

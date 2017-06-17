@@ -198,3 +198,17 @@ DGP.convert_cat_to_numeric = function (_lag_data, _cat_rdict) {
 };
 
 // --------------------------------------
+
+DGP.count_min_seq_length = function () {
+    var _min = null;
+    for (var _user in DGP.sequence) {
+        var _len = DGP.sequence[_user].length;
+        if (_min === null) {
+            _min = _len;
+        }
+        else if (_len < _min) {
+            _min = _len;
+        }
+    }
+    return _min;
+};
