@@ -32,7 +32,7 @@ DGP.main = function () {
     }
     _result.push("每人步數平均數:" + FPF_STATISTICS.stat_avg(_user_path_count));
     _result.push("每人步數標準差:" + FPF_STATISTICS.stat_stddev(_user_path_count));
-    _result.push("\n")
+    _result.push("\n");
     
     // -----------------------------------
     // 準備模型所需的資料
@@ -74,15 +74,15 @@ DGP.main = function () {
     // ------------------------------------
     // 開始進行生成
     
-    var _mock_profile = DGP.generate_mock_profile(_profile);
-    _result.push("產生mock profile");
-    _result.push(JSON.stringify(_mock_profile));
-    _result.push("\n");
+    
     //DGP.console_log("mock", _mock_profile);
     
     var _goal_array = [];
     var _path_result_array = [];
     for (var _i = 0; _i < _config_batch_size; _i++) {
+        
+        var _mock_profile = DGP.generate_mock_profile(_profile);
+        _result.push("產生mock profile: " + JSON.stringify(_mock_profile));
         var _path_result = DGP.build_generative_path(
             _mock_profile
             , _start_points
@@ -368,8 +368,7 @@ DGP.build_lag_data = function () {
 
 /**
  * 建立一組空的seq
- * @param {type} _seq
- * @returns {String}
+ * @returns {Object}
  */
 DGP.create_null_seq = function () {
     var _seq = DGP.get_first_seq();
