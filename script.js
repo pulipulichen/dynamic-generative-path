@@ -15,7 +15,9 @@ var _process_file = function(_callback) {
 // ---------------------
 
 var _loading_enable = function (_callback) {
-    $("#preloader").show().fadeIn("fast", "swing", _callback);
+    $("#preloader").show().fadeIn("fast", "swing", function () {
+        setTimeout(_callback, 500);
+    });
 };
 
 var _loading_disable = function () {
