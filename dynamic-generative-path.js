@@ -49,6 +49,7 @@ DGP.main = function () {
     // 建立lag資料
     var _model_data = DGP.build_model_data();
     DGP.console_log("train_data[0]", [_model_data.train[0], _model_data.target[0]]);
+    DGP.console_log("train_data[1]", [_model_data.train[1], _model_data.target[1]]);
     DGP.console_log("train_data last", [FPF_ARRAY.get_last(_model_data.train),  FPF_ARRAY.get_last(_model_data.target)]);
     
     // --------------------------------------------

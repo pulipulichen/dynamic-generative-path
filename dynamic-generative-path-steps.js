@@ -48,7 +48,8 @@ DGP.parse_end_steps = function () {
  * @param {JSON} _sequence
  * @returns {Array}
  */
-DGP.parse_next_steps_dict = function (_sequence) {
+DGP.parse_next_steps_dict = function () {
+    var _sequence = DGP.sequence;
     
     /**
      * 是否啟用將下一步也一樣的做法納入考量
