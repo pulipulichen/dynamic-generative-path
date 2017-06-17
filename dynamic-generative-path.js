@@ -5,6 +5,13 @@ DGP.profile = {};
 DGP.sequence = {};
 DGP.target = {};
 DGP.config = {};
+DGP.predict_function = null;
+DGP.start_steps = [];
+DGP.end_steps = [];
+DGP.next_steps_dict = [];
+DGP.target_only_end_distance = false;
+DGP.model_data = null;
+DGP.max_sequence_length = 0;
 
 DGP.main = function () {
     var _result = [];
@@ -14,15 +21,17 @@ DGP.main = function () {
     var _profile = DGP.parse_profile($("#input_mode_textarea_profile").val());
     _profile = DGP.feature_normalize(_profile);
     DGP.profile = _profile;
-    DGP.console_log("profile", _profile);
+    //DGP.console_log("profile", _profile);
+    
     var _sequence = DGP.parse_sequence($("#input_mode_textarea_sequence").val());
     _sequence = DGP.feature_normalize(_sequence);
     DGP.sequence = _sequence;
     DGP.console_log("sequence", _sequence);
+    
     var _target = DGP.parse_profile($("#input_mode_textarea_target").val());
     //_target = DGP.feature_normalize(_target);
     DGP.target = _target;
-    DGP.console_log("_target", _target);
+    //DGP.console_log("_target", _target);
     
     // -------------------------------------
     // 計算每人平均步數
@@ -35,21 +44,26 @@ DGP.main = function () {
     _result.push("\n");
     
     // -----------------------------------
+    // 準備生成路徑所需的資料
+    DGP.start_steps = DGP.parse_start_steps();
+    //DGP.console_log("start_steps", DGP.start_steps);
+    DGP.end_steps = DGP.parse_end_steps();
+    //DGP.console_log("end_steps", DGP.end_steps);
+    DGP.next_steps_dict = DGP.parse_next_steps_dict();
+    DGP.console_log("next_steps_dict", DGP.next_steps_dict);
+    
+    // -----------------------------------
     // 準備模型所需的資料
     DGP.config.lag_length = parseInt($("#lag_config").val(), 10);
     var _config_batch_size = parseInt($("#config_batch_size").val(), 10);
-    //console.log(_lag_config);
+    //console.log(DGP.config.lag_length);
     
     // 建立lag資料
-    var _lag_data_json = DGP.build_lag_data();
-    var _train_data = _lag_data_json.lag_data;
-    DGP.console_log("train_data[0]", _train_data[0]);
-    //return;
-    var _target_data = _lag_data_json.class_data;
-    DGP.console_log("target_data", _target_data);
-    //_target_data = DGP.feature_normalize(_target_data);
-    DGP.console_log("feature_normalize target_data[0]", _target_data[0]);
-    DGP.console_log("feature_normalize target_data last", FPF_ARRAY.get_last(_target_data));
+    DGP.model_data = DGP.build_model_data();
+    var _model_data = DGP.model_data;
+    DGP.console_log("train_data[0]", [_model_data.train[0], _model_data.target[0]]);
+    DGP.console_log("train_data[1]", [_model_data.train[1], _model_data.target[1]]);
+    DGP.console_log("train_data last", [FPF_ARRAY.get_last(_model_data.train),  FPF_ARRAY.get_last(_model_data.target)]);
     //return;
     
     // --------------------------------------------
@@ -57,39 +71,26 @@ DGP.main = function () {
     var _model_type = $('input[name="model"]:checked').val();
     var _config_end_distance_weight = FPF_FORM.get_value_float("#config_end_distance_weight");
     
-    var _predict_function = DGP.build_predict_function(_model_type
-        , _train_data
-        , _target_data
+    DGP.predict_function = DGP.build_predict_function(_model_type
         , _config_end_distance_weight);
-    
-    // -----------------------------------
-    // 準備生成路徑所需的資料
-    var _start_points = DGP.parse_start_points(_sequence);
-    DGP.console_log("_start_points", _start_points);
-    var _end_points = DGP.parse_end_points(_sequence);
-    DGP.console_log("_end_points", _end_points);
-    var _next_points = DGP.parse_next_points(_sequence);
-    DGP.console_log("_next_points", _next_points);
     
     // ------------------------------------
     // 開始進行生成
     
-    
+    var _mock_profile = DGP.generate_mock_profile(_profile);
+    _result.push("產生mock profile");
+    _result.push(JSON.stringify(_mock_profile));
+    _result.push("\n");
     //DGP.console_log("mock", _mock_profile);
+    
+    // -----------------------------
     
     var _goal_array = [];
     var _path_result_array = [];
+    var _fail_count = 0;
     for (var _i = 0; _i < _config_batch_size; _i++) {
-        
-        var _mock_profile = DGP.generate_mock_profile(_profile);
-        _result.push("產生mock profile: " + JSON.stringify(_mock_profile));
-        var _path_result = DGP.build_generative_path(
-            _mock_profile
-            , _start_points
-            , _end_points
-            , _next_points
-            , _lag_config
-            , _predict_function);
+        var _path_result = DGP.build_generative_path(_mock_profile);
+
         var _path = _path_result.path;
         _path_result_array.push(_path.length);
         
@@ -98,10 +99,21 @@ DGP.main = function () {
         }
         else {
             _goal_array.push(0);
+            console.log(_fail_count + "失敗了...準備建立壞的例子");
+            DGP.add_fail_path_to_model_data(_mock_profile, _path);
+            
+            console.log(_fail_count + "重新生成模型");
+            MODELS.reset_model();
+            DGP.predict_function = DGP.build_predict_function(_model_type
+                , _config_end_distance_weight);
+            _fail_count++;
+            _i--;
         }
         
         _result.push([_path_result.goal, _path.length].join(","));
     }
+    
+    // ------------------------
     
     var _avg = FPF_STATISTICS.stat_avg(_path_result_array);
     _avg = FPF_STATISTICS.float_to_fixed(_avg, 3);
@@ -117,6 +129,8 @@ DGP.main = function () {
     
     _result.push("\n最後一個生成路徑:");
     _result.push(_path.join("\n"));
+    
+    // ---------------------
     
     //_result = _path.join("\n");
     //_result = "總共" + _path.length + "步\n" + _result;
@@ -157,98 +171,6 @@ DGP.generate_mock_profile = function (_profile) {
 
 // ----------------------------------
 
-/**
- * 把CSV轉換成JSON
- * @param {type} _profile_csv
- * @returns {unresolved}
- */
-DGP.parse_profile = function (_profile_csv) {
-    var _profile = {};
-    FPF_CSV.csv_each(_profile_csv, function (_row) {
-        var _user = _row[0].value;
-        _profile[_user] = {};
-        for (var _r = 1; _r < _row.length; _r++) {
-            _profile[_user][_row[_r].key] = _row[_r].value;
-        }
-    });
-    return _profile;
-};
-
-/**
- * 把CSV轉換成JSON
- * @param {String} _sequence_csv
- * @returns {JSON}
- */
-DGP.parse_sequence = function (_sequence_csv) {
-    var _sequence = {};
-    
-    FPF_CSV.csv_each(_sequence_csv, function (_row) {
-        var _user = _row[0].value;
-        if (typeof(_sequence[_user]) === "undefined") {
-            _sequence[_user] = [];
-        }
-        
-        var _seq = {};
-        var _time = _row[1].value;
-        _seq["time"] = _time;
-            
-        for (var _r = 2; _r < _row.length; _r++) {
-            _seq[_row[_r].key] = [_row[_r].value];
-        }
-        _sequence[_user].push(_seq);
-    });
-    
-    // 排序
-    for (var _user in _sequence) {
-        _sequence[_user].sort(function (_a, _b) {
-            return (_a.time - _b.time);
-        });
-    }
-    
-    // --------------------------
-    // 合併一樣時間的事件
-    var _time_interval = 1;
-    for (var _user in _sequence) {
-        var _last_time = null;
-        var _seq = [];
-        for (var _i = 0; _i < _sequence[_user].length; _i++) {
-            var _s = _sequence[_user][_i];
-            var _time = _s.time;
-            if (_last_time === null || (_time - _last_time) > _time_interval) {
-                _seq.push(_s);
-            }
-            else {
-                var _last_seq = FPF_ARRAY.get_last(_seq);
-                for (var _key in _last_seq) {
-                    if (_key !== "time") {
-                        var _value = _s[_key][0];
-                        if ($.inArray(_value, _last_seq[_key]) === -1) {
-                            _last_seq[_key].push(_value);
-                        }
-                    }
-                }
-            }
-            
-            _last_time = _time;
-        }
-        _sequence[_user] = _seq;
-    }
-    
-    // ------------------------------
-    // 合併每一個事件
-    for (var _user in _sequence) {
-        for (var _i = 0; _i < _sequence[_user].length; _i++) {
-            for (var _key in _sequence[_user][_i]) {
-                if (Array.isArray(_sequence[_user][_i][_key])) {
-                    _sequence[_user][_i][_key] = _sequence[_user][_i][_key].sort().join(",");
-                }
-            }
-        }
-    }
-    
-    return _sequence;
-};
-
 // ----------------------
 
 DGP.console_log = function (_title, _message) {
@@ -262,27 +184,33 @@ DGP.console_log = function (_title, _message) {
     }
     
     console.log(_message);
+    
+    return this;
 };
 
 // ----------------------
 
+/**
+ * @deprecated 20170617 Pulipuli Chen
+ * @param {type} _end_steps
+ * @param {type} _user_target
+ * @returns {unresolved}
+ */
 DGP.build_target_data = function (_end_steps, _user_target) {
     var _target_data = {};
-    if (_end_steps === 0) {
-        _end_steps = 0.5;
-    }
-    _end_steps = Math.sqrt(_end_steps);
-    _end_steps = 1 /_end_steps;
+    //if (_end_steps === 0) {
+    //    _end_steps = 0.5;
+    //}
+    //_end_steps = Math.sqrt(_end_steps);
+    //_end_steps = 1 /_end_steps;
     //console.log(["end_steps", _end_steps]);
     //_end_steps =  Math.log(_end_steps);
-    _target_data["end_steps"] = _end_steps;
-    for (var _p in _user_target) {
-        //_target_data[_p] = _user_target[_p];
-    }
+    
+    
     return _target_data;
 };
 
-DGP.build_lag_data = function () {
+DGP.build_model_data = function () {
     var _data = [];
     var _class_data = [];
     
@@ -290,6 +218,8 @@ DGP.build_lag_data = function () {
     var _sequence = DGP.sequence;
     var _target = DGP.target;
     var _lag_config = DGP.config.lag_length;
+    
+    var _max_end_distance = 0;
         
     // ------------------------------
     
@@ -297,6 +227,7 @@ DGP.build_lag_data = function () {
     //console.log(_target);
     for (var _user in _sequence) {
         var _user_seq = _sequence[_user];
+        
         //console.log([_user, _user_seq.length, typeof(_target[_user])]);
         if (typeof(_target[_user]) === "undefined") {
             continue;
@@ -304,76 +235,86 @@ DGP.build_lag_data = function () {
         var _user_profile = _profile[_user];
         var _user_target = _target[_user];
         
+        if (_max_end_distance < _user_seq.length) {
+            _max_end_distance = _user_seq.length;
+        }
+        
         //console.log([_user, _user_seq.length, _lag_config]);
-        for (var _i = 0; _i < _user_seq.length; _i++) {
+        var _start_i = 0;
+        for (var _i = _start_i; _i < _user_seq.length; _i++) {
             // 取得目前的seq
             var _lag_seq = [];
-            var _current_seq = _user_seq[_i];
-            _lag_seq.push(_current_seq);
             
-            for (var _j = 1; _j < _lag_config; _j++) {
-                // 嘗試取得前j個
-                var _index = _i - _j;
-                var _seq;
-                if (_index < 0) {
-                    _seq = DGP.create_null_seq(_current_seq);
-                }
-                else {
-                    _seq = _user_seq[_index];
+            for (var _j = _lag_config; _j >= 0; _j--) {
+                var _current_index = _i - _j;
+                var _seq = DGP.create_null_seq();
+                if (typeof(_user_seq[_current_index]) === "object") {
+                    _seq = _user_seq[_current_index];
                 }
                 _lag_seq.push(_seq);
             }
             
-            _lag_seq.reverse();
-            
             // --------------------
-            var _d = {};
-            for (var _j = 0; _j < _lag_seq.length; _j++) {
-                for (var _s in _lag_seq[_j]) {
-                    if (_s === "time") {
-                        continue;
-                    }
-                    
-                    var _key = DGP.build_lag_key(_j, _s);
-                    var _value = _lag_seq[_j][_s];
-                    _d[_key] = _value;
-                }
-            }
-            
-            // 加入profile的資料
-            for (var _p in _user_profile) {
-                _d[_p] = _user_profile[_p];
-            }
-            
-            //console.log(_d);
+            var _d = DGP.build_train_data(_lag_seq, _user_profile);
             _data.push(_d);
             
             // -----------------------------------------
             
             // 加入target的資料
-            var _end_steps = _user_seq.length - _i;
-            var _target_data = DGP.build_target_data(_end_steps, _user_target);
+            //var _end_steps = _user_seq.length - _i - 1;
+            // 0
+            // 5
+            // 0 1 2 3 4
+            var _end_steps = (_i - _start_i) / (_user_seq.length - 1 - _start_i);
+            //console.log(_end_steps);
+            
+            var _target_data = {};         
+            _target_data["end_distance"] = _end_steps;
+            _target_data["finish"] = 1;
+            if (DGP.target_only_end_distance === false) {
+                for (var _p in _user_target) {
+                    _target_data[_p] = _user_target[_p];
+                }
+            }
             //console.log(["target", _user, JSON.stringify(_target_data)]);
             _class_data.push(_target_data);
         }   // for (var _i = 0; _i < (_user_seq.length - _lag_config); _i++) {
     }
     
-    var _result = {
-        "lag_data": _data,
-        "class_data": _class_data
-    };
+    _max_end_distance = _max_end_distance + 1;
+    DGP.max_sequence_length = _max_end_distance;
+    // 全部減去最大距離
+    /*
+    var _max = 0;
+    var _min = 0;
+    for (var _i = 0; _i < _class_data.length; _i++) {
+        _class_data[_i]["end_distance"] = _max_end_distance - _class_data[_i]["end_distance"];
+        console.log(_class_data[_i]["end_distance"]);
+    }
+    console.log(["最大距離", _max_end_distance]);
+    */
     
+    var _result = {
+        "train": _data,
+        "target": _class_data
+    };
+   
     return _result;
 };
 
 /**
  * 建立一組空的seq
- * @returns {Object}
+ * @param {type} _seq
+ * @returns {String}
  */
 DGP.create_null_seq = function () {
     var _seq = DGP.get_first_seq();
     var _result = {};
     for (var _key in _seq) {
+        if (_key === "time") {
+            continue;
+        }
+        
         _result[_key] = "null";
     }
     return _result;
@@ -385,121 +326,28 @@ DGP.get_first_seq = function () {
     }
 };
 
-// ---------------------------------
-
-DGP.parse_start_points = function (_sequence) {
-    var _points = [];
-    for (var _user in _sequence) {
-        var _user_seq = _sequence[_user];
-        var _event = _user_seq[0];
-        var _p = {};
-        for (var _e in _event) {
-            if (_e !== "time") {
-                //console.log(_e);
-                _p[_e] = _event[_e];
-            }
-        }
-        _p = JSON.stringify(_p);
-        if ($.inArray(_p, _points) === -1) {
-            //console.log(_p);
-            _points.push(_p);
-        }
-    }
-    return _points;
-};
-
-DGP.parse_end_points = function (_sequence) {
-    var _points = [];
-    for (var _user in _sequence) {
-        var _user_seq = _sequence[_user];
-        var _event = _user_seq[(_user_seq.length-1)];
-        var _p = {};
-        for (var _e in _event) {
-            if (_e !== "time") {
-                _p[_e] = _event[_e];
-            }
-        }
-        _p = JSON.stringify(_p);
-        if ($.inArray(_p, _points) === -1) {
-            _points.push(_p);
-        }
-    }
-    return _points;
-};
-
-/**
- * 建立下一步的資料集
- * @param {JSON} _sequence
- * @returns {Array}
- */
-DGP.parse_next_points = function (_sequence) {
-    
-    /**
-     * 是否啟用將下一步也一樣的做法納入考量
-     * @type Boolean
-     */
-    var _enable_same_next = false;
-    
-    var _points = {};
-    for (var _user in _sequence) {
-        var _user_seq = _sequence[_user];
-        var _before_point = undefined;
-        //console.log(_user_seq);
-        for (var _i = 0; _i < _user_seq.length; _i++) {
-            var _p = {};
-            var _event = _user_seq[_i];
-            for (var _e in _event) {
-                if (_e !== "time") {
-                    _p[_e] = _event[_e];
-                }
-            }
-            var _current_point = JSON.stringify(_p);
-            if (_before_point === undefined) {
-                _before_point = _current_point;
-            }
-            else {
-                if (_enable_same_next || _before_point !== _current_point) {
-                    if (typeof(_points[_before_point]) === "undefined") {
-                        _points[_before_point] = [];
-                    }
-                    if ($.inArray(_current_point, _points[_before_point]) === -1) {
-                        _points[_before_point].push(_current_point);
-                    }
-                    _before_point = _current_point;
-                }
-            }
-        }
-    }
-    return _points;
-};
-
 // -----------------------
 
-DGP.build_generative_path = function (_profile, _start_points, _end_points, _next_points, _lag_config, _predict_function) {
+DGP.build_generative_path = function (_user_profile) {
+    var _lag_config = DGP.config.lag_length;
+    
     var _path = [];
     var _lag_data = [];
     
-    var _max_length = FPF_FORM.get_value_float("#config_path_max_length");
+    //var _max_length = FPF_FORM.get_value_float("#config_path_max_length");
+    var _max_length = DGP.max_sequence_length;
     var _goal = false;
     
-    var _push_next_point = function (_next_point) {
-        _lag_data = _lag_data.slice(0,1);
-        _lag_data.push(_next_point);
-        //DGP.console_log("_push_next_point", _lag_data.length);
-    };
-    // --------------------------
-    // 隨機從_start_points中取出一個
-    //console.log(_start_points);
-    //var _start_point = FPF_ARRAY.array_pick_random_one_remove(_start_points);
-    var _start_point = FPF_ARRAY.array_pick_random_one(_start_points);
-    //console.log(["開始", _start_point]);
-    _lag_data.push(_start_point);
-    _path.push(_start_point);
+//    var _push_next_point = function (_next_point) {
+//        _lag_data = _lag_data.slice(0,1);
+//        _lag_data.push(_next_point);
+//        //DGP.console_log("_push_next_point", _lag_data.length);
+//    };
     
-    var _before_point = _start_point;
+    var _before_point = "null";
+    var _last_y = 0;
     while (true) {
-        
-        var _next_list = FPF_ARRAY.array_clone(_next_points[_before_point]);
+        var _next_list = FPF_ARRAY.array_clone(DGP.next_steps_dict[_before_point]);
         if (_next_list.length === 0) {
             console.log(["無路可走", _path.length, _path]);
             break;
@@ -508,8 +356,6 @@ DGP.build_generative_path = function (_profile, _start_points, _end_points, _nex
         
         //console.log(_next_list);
         
-        
-        var _next_point;
         // 關閉已知陣列的檢查，這個雖然可以幫助快點走到終點，但不一定好
         //while (_next_list.length > 0 && $.inArray(_next_point, _lag_data) > -1) {
         //    _next_point = FPF_ARRAY.array_pick_random_one_remove(_next_list);
@@ -517,27 +363,36 @@ DGP.build_generative_path = function (_profile, _start_points, _end_points, _nex
         //}
         
         //console.log(_next_point);
-        if (_lag_data.length < _lag_config-1 || _next_list.length === 0) {
-            var _next_point = FPF_ARRAY.array_pick_random_one_remove(_next_list);
-            
-            _lag_data.push(_next_point);
-            _path.push(_next_point);
+        try {
+            var _choose_result = DGP.choose_best_next_point(_user_profile, _lag_data, _next_list, _last_y);
         }
-        else {
-            _next_point = DGP.choose_best_next_point(_profile, _lag_data, _next_list, _predict_function);
-            
-            //console.log([_y1, _next_point]);
-            _path.push(_next_point);
-            _push_next_point(_next_point);
-            _before_point = _next_point;
+        catch (_e) {
+            console.log(_e);
+            break;
         }
+        var _step = _choose_result.step;
+        _last_y = _choose_result.y;
+        //console.log([_last_y, _step]);
+
+        //console.log([_y1, _next_point]);
+        _path.push(_step);
+        
+        _lag_data.push(_step);
+        if (_lag_data.length > _lag_config) {
+            _lag_data = _lag_data.slice(0,1);
+        }
+            
+        _before_point = _step;
+        
+        // -------------
         
         if (_path.length > _max_length) {
-            console.log(["失敗了，沒有走到終點", _path[0], _path[1], _path]);
+            //throw ["失敗了，沒有走到終點", _path[0], _path[1], _path];
+            console.log("失敗了，沒有走到終點", _path[0], _path[1], _path);
             break;
         }
         
-        if ($.inArray(_next_point, _end_points) > -1) {
+        if ($.inArray(_step, DGP.end_steps) > -1) {
             console.log(["成功走到終點", _path[0], _path[1], _path.length, _path]);
             _goal = true;
             break;
@@ -550,12 +405,23 @@ DGP.build_generative_path = function (_profile, _start_points, _end_points, _nex
     };
 };
 
-DGP.choose_best_next_point = function (_profile, _lag_data, _next_list, _predict_function) {
+DGP.has_next_step = function (_step) {
+    if (DGP.is_end_step(_step) === true) {
+        return true;
+    }
+    return (typeof(DGP.next_steps_dict[_step]) !== "undefined");
+};
+
+DGP.is_end_step = function (_step) {
+    return ($.inArray(_step, DGP.end_steps) > -1);
+};
+
+DGP.choose_best_next_point = function (_profile, _lag_data, _next_list, _last_y) {
     /**
      * 是否不重複lag_data中走過的路？
      * @type Boolean
      */
-    var _enable_same_next = false;
+    var _enable_same_next = true;
     
     /**
      * 允許最多預測的數量
@@ -563,26 +429,43 @@ DGP.choose_best_next_point = function (_profile, _lag_data, _next_list, _predict
      */
     var _predict_result_limit = 100;
     
-    if (_next_list.length === 1) {
-        return _next_list[0];
-    }
+//    if (_next_list.length === 1) {
+//        console.log(["只有一條路選擇", _next_list[0]])
+//        return _next_list[0];
+//    }
 
     var _predict_result = [];
+    
+    //console.log(["可以考慮的步數", JSON.stringify(_next_list)]);
     while (_next_list.length > 0) {
         //var _step = _next_list[_i];
         var _step = FPF_ARRAY.array_pick_random_one_remove(_next_list);
-
+        //console.log(_step);
         if (_enable_same_next === false) {
             //console.log(_step);
             //console.log(_lag_data);
             if ($.inArray(_step, _lag_data) > -1) {
+                //console.log(["不允許相同的步驟", _lag_data, _step])
                 continue;
             }
+        }
+        
+        // 不考慮沒有下一步的步數
+        if (DGP.has_next_step(_step) === false) {
+            continue;
         }
 
         var _test_data = DGP.build_test_data(_lag_data, _step, _profile);
         //DGP.console_log("_test_data", _test_data);
-        var _y = _predict_function(_test_data);
+        
+        var _y = DGP.predict_function(_test_data);
+        
+        // 結果不可比之前的還差
+        //if (_y < _last_y) {
+        //    console.log(["不好的結果", _y, _last_y, _step]);
+        //    continue;
+        //}
+        
         _predict_result.push({
             y: _y,
             step: _step
@@ -594,7 +477,7 @@ DGP.choose_best_next_point = function (_profile, _lag_data, _next_list, _predict
     }
 
     if (_predict_result.length === 0) {
-        throw "無路可走";
+        throw ["predict_result無路可走", _next_list];
     }
 
     // 排序
@@ -602,40 +485,42 @@ DGP.choose_best_next_point = function (_profile, _lag_data, _next_list, _predict
         return (_b.y - _a.y);
     });
     //DGP.console_log("_predict_result", _predict_result);
-
-    return _predict_result[0].step;
+    
+    var _i = 0;
+    while (_i < _predict_result.length) {
+        if (_predict_result[_i].y !== _last_y) {
+            break;
+        }
+        //console.log(["踢掉一樣的路徑", _last_y, _predict_result[_i].step]);
+        _i++;
+    }
+    
+    if (typeof(_predict_result[_i]) === "undefined") {
+        throw ["沒有可以選擇的路徑了", _next_list];
+    }
+    
+    return _predict_result[_i];
 };
 
 // ---------------------------------------------
 
-/**
- * @deprecated 20170616 不使用了
- * @param {type} _lag_data
- * @param {type} _next_point
- * @param {type} _cat_rdict
- * @returns {DGP.create_cat_feature._array|Array}
- */
-DGP.convert_lag_data_to_x = function (_lag_data, _next_point, _cat_rdict) {
-    var _lag_data1 = FPF_ARRAY.array_clone(_lag_data);
-    _lag_data1.push(_next_point);
-    //console.log(_lag_data);
-
-    // 把它轉換成能預測的資料
-    var _x_json = {};
-    for (var _l = 0; _l < _lag_data1.length; _l++) {
-
-        var _json = JSON.parse(_lag_data1[_l]);
-        for (var _key in _json) {
-            _x_json["lag" + _l + "_" + _key] = _json[_key];
-        }
-    }
-    var _x = DGP.create_cat_feature(_x_json, _cat_rdict);
-    return _x;
-};
-
 DGP.build_test_data = function (_lag_data, _next_point, _profile) {
-    var _test_array = FPF_ARRAY.array_clone(_lag_data);
+   
+    //var _test_array = FPF_ARRAY.array_clone(_lag_data);
+    var _test_array = [];
+    for (var _i = 0; _i < DGP.config.lag_length - 1; _i++) {
+        var _step;
+        if (typeof(_lag_data[_i]) === "string") {
+            _step = _lag_data[_i];
+        }
+        else {
+            _step = DGP.create_null_seq();
+            _step = JSON.stringify(_step);
+        }
+        _test_array.push(_step);
+    }
     _test_array.push(_next_point);
+    
     
     var _result = {};
     //DGP.console_log("lag_data", _test_array);
@@ -657,44 +542,6 @@ DGP.build_lag_key = function (_lag, _key) {
     return "lag" + _lag + "_" + _key;
 };
 
-
-/**
- * 預測y，但之後不使用
- * @deprecated 20170616
- * @param {type} _lag_data
- * @param {type} _next_point
- * @param {type} _model
- * @param {type} _cat_rdict
- * @returns {@arr;_y|DGP.predict_y._y|Number|DGP.predict_y._config_end_distance_weight}
- */
-DGP.predict_y = function (_lag_data, _next_point, _model, _cat_rdict) {
-    var _x = DGP.convert_lag_data_to_x(_lag_data, _next_point, _cat_rdict);
-    //console.log(_x);
-    var _y = _model.predict([_x]);
-    
-    // 直接取得一個數值
-    //while (typeof(_y) === "object") {
-    //    _y = _y[0];
-    //}
-    
-    if (typeof(_y) === "object") {
-        _y = _y[0];
-
-        var _config_end_distance_weight = FPF_FORM.get_value_float("#config_end_distance_weight");
-        // 這時候應該會有兩個值
-        var _result = 0;
-        for (var _i = 0; _i < _y.length; _i++) {
-            if (_i === 0) {
-                _result = _result + _y[_i] * _config_end_distance_weight;
-            }
-            else {
-                _result = _result + _y[_i];
-            }
-        }
-    }
-    return _result;
-};
-
 DGP.defuzzication_target_martix = function (_target_data, _config_end_distance_weight) {
     if (typeof(_target_data) !== "object") {
         return _target_data;
@@ -702,7 +549,6 @@ DGP.defuzzication_target_martix = function (_target_data, _config_end_distance_w
     else {
         _target_data = _target_data[0];
 
-        
         // 這時候應該會有兩個值
         var _result = 0;
         //DGP.console_log("defuzzication_target_martix", _target_data);
@@ -726,18 +572,20 @@ DGP.defuzzication_target_martix = function (_target_data, _config_end_distance_w
  * @param {JSON} _target_data
  * @returns {DGP.build_predict_function._predict_function}
  */
-DGP.build_predict_function = function (_model_type, _train_data, _target_data, _config_end_distance_weight) {
+DGP.build_predict_function = function (_model_type, _config_end_distance_weight) {
+    var _train_data = DGP.model_data.train;
+    var _target_data = DGP.model_data.target;
     var _train_rdict = DGP.build_matrix_dict(_train_data);
-    DGP.console_log("train_rdict", _train_rdict);
+    //DGP.console_log("train_rdict", _train_rdict);
     
     var _numeric_train_data = DGP.convert_cat_to_numeric(_train_data, _train_rdict);
-    DGP.console_log("numeric_train_data", _numeric_train_data[0]);
+    //DGP.console_log("numeric_train_data", _numeric_train_data[0]);
     
     var _target_rdict = DGP.build_matrix_dict(_target_data);
-    DGP.console_log("_target_rdict", _target_rdict);
+    //DGP.console_log("_target_rdict", _target_rdict);
     
     var _numeric_target_data = DGP.convert_cat_to_numeric(_target_data, _target_rdict);
-    DGP.console_log("numeric_target_data", _numeric_target_data[0]);
+    //DGP.console_log("numeric_target_data", _numeric_target_data[0]);
     
     // ------------------------------------
     var _model = MODELS.get_model();
@@ -769,4 +617,59 @@ DGP.build_predict_function = function (_model_type, _train_data, _target_data, _
     };
     
     return _predict_function;
+};
+
+// -------------------------------
+
+DGP.add_fail_path_to_model_data = function (_user_profile, _fail_path) {
+    var _lag_length = DGP.config.lag_length;
+    for (var _i = _fail_path.length - parseInt(_lag_length * 2); _i < _fail_path.length; _i++) {
+        var _lag_data = [];
+        for (var _j = _lag_length - 1; _j >= 0; _j--) {
+            var _current_index = _i - _j;
+            var _seq = DGP.create_null_seq();
+            if (typeof(_fail_path[_current_index]) !== "undefined") {
+                _seq = JSON.parse(_fail_path[_current_index]);
+            }
+            _lag_data.push(_seq);
+        }
+        
+        var _train_data = DGP.build_train_data(_lag_data, _user_profile);
+        DGP.model_data.train.push(_train_data);
+        
+        var _target_data = DGP.create_fail_target_data();
+        DGP.model_data.target.push(_target_data);
+        
+        //console.log([_train_data, _target_data]);
+        //throw "結束";
+    }
+};
+
+DGP.build_train_data = function (_lag_data, _user_profile) {
+    var _d = {};
+    for (var _j = 0; _j < _lag_data.length; _j++) {
+        for (var _s in _lag_data[_j]) {
+            if (_s === "time") {
+                continue;
+            }
+
+            var _key = DGP.build_lag_key(_j, _s);
+            var _value = _lag_data[_j][_s];
+            _d[_key] = _value;
+        }
+    }
+
+    // 加入profile的資料
+    for (var _p in _user_profile) {
+        _d[_p] = _user_profile[_p];
+    }
+    
+    return _d;
+};
+
+DGP.create_fail_target_data = function () {
+    var _target = FPF_ARRAY.array_clone(DGP.model_data.target[0]);
+    _target["finish"] = 0;
+    _target["end_distance"] = 0;
+    return _target;
 };

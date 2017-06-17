@@ -32,12 +32,12 @@
 <script src="toolkit/fpf-form.js"></script>
 <script src="dynamic-generative-path.js"></script>
 <script src="dynamic-generative-path-preprocess.js"></script>
+<script src="dynamic-generative-path-steps.js"></script>
 <script src="ml-models.js"></script>
 
 <!-- ------------------------------------ -->
 
 <div class="header">
-<a href="../spreadsheet2arff">Spreadsheet to ARFF</a>
 <h1>
     Generative Path
 </h1>
@@ -120,12 +120,21 @@
     </div>
     <div class="inline field">
         <label for="config_end_distance_weight">End distance weight:</label>
-        <input type="text" name="config_end_distance_weight" id="config_end_distance_weight" value="100" />
+        <input type="text" name="config_end_distance_weight" id="config_end_distance_weight" 
+               value="1" />
     </div>
     <div class="inline field">
-        <label for="config_path_max_length">Max path max length:</label>
-        <input type="text" name="config_path_max_length" id="config_path_max_length" value="500" />
+        <label for="config_finish_task_weight">Finish task weight:</label>
+        <input type="text" name="config_finish_task_weight" id="config_end_distance_weight" 
+               value="100" />
     </div>
+    <!--
+    <div class="inline field">
+        <label for="config_path_max_length">Max path max length:</label>
+        <input type="text" name="config_path_max_length" id="config_path_max_length" 
+               value="100" />
+    </div>
+    -->
     
     <!-- ------------------------------ -->
     <hr />

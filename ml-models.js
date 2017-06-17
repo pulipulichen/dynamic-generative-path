@@ -35,8 +35,11 @@ MODELS.build_random_model = function (_x, _y) {
  */
 MODELS.build_mlp_model = function (_x, _y) {
     var _hidden_layer_sizes_config = FPF_FORM.get_checked_value("config_mlp_hidden_layer_sizes");
+    
     var _hidden_layer_sizes = [_x[0].length, _y[0].length];
     //var _hidden_layer_sizes = [_x[0].length];
+    //var _hidden_layer_sizes = [_x[0].length - 1];
+    
     if (_hidden_layer_sizes_config === "config_mlp_hidden_layer_sizes_custom") {
         _hidden_layer_sizes = $("#mlp_hidden_layer_sizes").val().split(",");
     }
@@ -49,7 +52,8 @@ MODELS.build_mlp_model = function (_x, _y) {
         'hidden_layer_sizes' : _hidden_layer_sizes
     });
 
-    mlp.set('log level',1); // 0 : nothing, 1 : info, 2 : warning.
+    mlp.set('log level', 1); // 0 : nothing, 1 : info, 2 : warning.
+    //mlp.set('log level', 0); // 0 : nothing, 1 : info, 2 : warning.
 
     var _lr = FPF_FORM.get_value_float("#config_mlp_lr");
     var _epochs = FPF_FORM.get_value_float("#config_mlp_epochs");
