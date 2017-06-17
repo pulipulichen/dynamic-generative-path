@@ -34,10 +34,11 @@ MODELS.build_random_model = function (_x, _y) {
  * @returns {MODELS.build_mlp_model.mlp|ml.MLP}
  */
 MODELS.build_mlp_model = function (_x, _y) {
-    var _hl_config = FPF_FORM.get_checked_value("config_mlp_hidden_layer_sizes");
-    var _hl = [_x[0].length, _y[0].length];
-    if (_hl_config === "config_mlp_hidden_layer_sizes_custom") {
-        _hl = $("#mlp_hidden_layer_sizes").val().split(",");
+    var _hidden_layer_sizes_config = FPF_FORM.get_checked_value("config_mlp_hidden_layer_sizes");
+    var _hidden_layer_sizes = [_x[0].length, _y[0].length];
+    //var _hidden_layer_sizes = [_x[0].length];
+    if (_hidden_layer_sizes_config === "config_mlp_hidden_layer_sizes_custom") {
+        _hidden_layer_sizes = $("#mlp_hidden_layer_sizes").val().split(",");
     }
     
     var mlp = new ml.MLP({
@@ -45,7 +46,7 @@ MODELS.build_mlp_model = function (_x, _y) {
         'label' : _y,
         'n_ins' : _x[0].length,
         'n_outs' : _y[0].length,
-        'hidden_layer_sizes' : _hl
+        'hidden_layer_sizes' : _hidden_layer_sizes
     });
 
     mlp.set('log level',1); // 0 : nothing, 1 : info, 2 : warning.
