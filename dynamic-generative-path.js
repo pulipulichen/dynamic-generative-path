@@ -620,7 +620,7 @@ DGP.defuzzication_target_martix = function (_target_data, _target_dict) {
             }
             _r[_key] = _result;
         }
-        //console.log(JSON.stringify(_r));
+        console.log(JSON.stringify(_r));
         return _result;
     }
 };
@@ -739,7 +739,7 @@ DGP.build_train_data = function (_lag_data, _user_profile) {
 
 DGP.create_fail_target_data = function () {
     var _target = FPF_ARRAY.array_clone(DGP.model_data.target[0]);
-    _target["finish"] = 0;
-    _target["end_distance"] = 0;
+    _target["_finish"] = 0;
+    _target["_end_distance"] = 0;
     return _target;
 };
