@@ -5,6 +5,10 @@ DGP.profile = {};
 DGP.sequence = {};
 DGP.target = {};
 DGP.config = {};
+DGP.predict_function = null;
+DGP.start_steps = [];
+DGP.end_steps = [];
+DGP.next_steps_dict = [];
 
 DGP.main = function () {
     var _result = [];
@@ -57,19 +61,19 @@ DGP.main = function () {
     var _model_type = $('input[name="model"]:checked').val();
     var _config_end_distance_weight = FPF_FORM.get_value_float("#config_end_distance_weight");
     
-    var _predict_function = DGP.build_predict_function(_model_type
+    DGP.predict_function = DGP.build_predict_function(_model_type
         , _train_data
         , _target_data
         , _config_end_distance_weight);
     
     // -----------------------------------
     // 準備生成路徑所需的資料
-    var _start_points = DGP.parse_start_points(_sequence);
-    DGP.console_log("_start_points", _start_points);
-    var _end_points = DGP.parse_end_points(_sequence);
-    DGP.console_log("_end_points", _end_points);
-    var _next_points = DGP.parse_next_points(_sequence);
-    DGP.console_log("_next_points", _next_points);
+    DGP.start_steps = DGP.parse_start_steps();
+    DGP.console_log("start_steps", DGP.start_steps);
+    DGP.end_steps = DGP.parse_end_steps();
+    DGP.console_log("end_steps", DGP.end_steps);
+    DGP.next_steps_dict = DGP.parse_next_steps_dict();
+    DGP.console_log("next_steps_dict", DGP.next_steps_dict);
     
     // ------------------------------------
     // 開始進行生成
@@ -87,9 +91,7 @@ DGP.main = function () {
             _mock_profile
             , _start_points
             , _end_points
-            , _next_points
-            , _lag_config
-            , _predict_function);
+            , _next_points);
         var _path = _path_result.path;
         _path_result_array.push(_path.length);
         
@@ -386,97 +388,11 @@ DGP.get_first_seq = function () {
     }
 };
 
-// ---------------------------------
-
-DGP.parse_start_points = function (_sequence) {
-    var _points = [];
-    for (var _user in _sequence) {
-        var _user_seq = _sequence[_user];
-        var _event = _user_seq[0];
-        var _p = {};
-        for (var _e in _event) {
-            if (_e !== "time") {
-                //console.log(_e);
-                _p[_e] = _event[_e];
-            }
-        }
-        _p = JSON.stringify(_p);
-        if ($.inArray(_p, _points) === -1) {
-            //console.log(_p);
-            _points.push(_p);
-        }
-    }
-    return _points;
-};
-
-DGP.parse_end_points = function (_sequence) {
-    var _points = [];
-    for (var _user in _sequence) {
-        var _user_seq = _sequence[_user];
-        var _event = _user_seq[(_user_seq.length-1)];
-        var _p = {};
-        for (var _e in _event) {
-            if (_e !== "time") {
-                _p[_e] = _event[_e];
-            }
-        }
-        _p = JSON.stringify(_p);
-        if ($.inArray(_p, _points) === -1) {
-            _points.push(_p);
-        }
-    }
-    return _points;
-};
-
-/**
- * 建立下一步的資料集
- * @param {JSON} _sequence
- * @returns {Array}
- */
-DGP.parse_next_points = function (_sequence) {
-    
-    /**
-     * 是否啟用將下一步也一樣的做法納入考量
-     * @type Boolean
-     */
-    var _enable_same_next = false;
-    
-    var _points = {};
-    for (var _user in _sequence) {
-        var _user_seq = _sequence[_user];
-        var _before_point = undefined;
-        //console.log(_user_seq);
-        for (var _i = 0; _i < _user_seq.length; _i++) {
-            var _p = {};
-            var _event = _user_seq[_i];
-            for (var _e in _event) {
-                if (_e !== "time") {
-                    _p[_e] = _event[_e];
-                }
-            }
-            var _current_point = JSON.stringify(_p);
-            if (_before_point === undefined) {
-                _before_point = _current_point;
-            }
-            else {
-                if (_enable_same_next || _before_point !== _current_point) {
-                    if (typeof(_points[_before_point]) === "undefined") {
-                        _points[_before_point] = [];
-                    }
-                    if ($.inArray(_current_point, _points[_before_point]) === -1) {
-                        _points[_before_point].push(_current_point);
-                    }
-                    _before_point = _current_point;
-                }
-            }
-        }
-    }
-    return _points;
-};
-
 // -----------------------
 
-DGP.build_generative_path = function (_profile, _start_points, _end_points, _next_points, _lag_config, _predict_function) {
+DGP.build_generative_path = function (_user_profile, _start_points, _end_points, _next_points) {
+    var _lag_config = DGP.config.lag_length;
+    
     var _path = [];
     var _lag_data = [];
     
@@ -525,7 +441,7 @@ DGP.build_generative_path = function (_profile, _start_points, _end_points, _nex
             _path.push(_next_point);
         }
         else {
-            _next_point = DGP.choose_best_next_point(_profile, _lag_data, _next_list, _predict_function);
+            _next_point = DGP.choose_best_next_point(_user_profile, _lag_data, _next_list, _predict_function);
             
             //console.log([_y1, _next_point]);
             _path.push(_next_point);
@@ -551,7 +467,7 @@ DGP.build_generative_path = function (_profile, _start_points, _end_points, _nex
     };
 };
 
-DGP.choose_best_next_point = function (_profile, _lag_data, _next_list, _predict_function) {
+DGP.choose_best_next_point = function (_profile, _lag_data, _next_list) {
     /**
      * 是否不重複lag_data中走過的路？
      * @type Boolean
@@ -583,7 +499,7 @@ DGP.choose_best_next_point = function (_profile, _lag_data, _next_list, _predict
 
         var _test_data = DGP.build_test_data(_lag_data, _step, _profile);
         //DGP.console_log("_test_data", _test_data);
-        var _y = _predict_function(_test_data);
+        var _y = DGP.predict_function(_test_data);
         _predict_result.push({
             y: _y,
             step: _step
