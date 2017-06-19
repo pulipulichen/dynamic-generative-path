@@ -1,8 +1,15 @@
 FPF_CSV = {};
 
+/**
+ * 輸入CSV，然後對CSV的每一列的資料進行處理
+ * @param {String} _csv
+ * @param {Function} _process = function(_row) {}
+ * @returns {JSON}
+ */
 FPF_CSV.csv_each = function (_csv, _process) {
     var _lines = _csv.trim().split("\n");
     var _keys = [];
+    var _result = [];
     for (var _i = 0; _i < _lines.length; _i++) {
         var _fields = _lines[_i].trim().split(",");
         if (_i === 0) {
@@ -25,6 +32,8 @@ FPF_CSV.csv_each = function (_csv, _process) {
                 });
             }
             _process(_row);
+            _result.push(_row);
         }
     }
+    return _result;
 };

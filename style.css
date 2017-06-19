@@ -24,7 +24,7 @@ body {
 .file-process-framework textarea.preview {
   display: block;
   width: 90%;
-  height: calc(100vh - 400px) !important;
+  height: calc(100vh - 300px) !important;
   min-height: 0 !important;
 }
 
