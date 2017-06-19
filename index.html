@@ -1,6 +1,6 @@
 <html>
     <head>
-        <title>Generative Path (file process framework 20170615)</title>
+        <title>Dynamic Path Generator (file process framework 20170615)</title>
         <meta charset="UTF-8">
         <meta name="viewport" content="width=device-width, initial-scale=1.0">
     </head>
@@ -39,7 +39,7 @@
 
 <div class="header">
 <h1>
-    Generative Path
+    Dynamic Path Generator
 </h1>
 </div>
 
@@ -81,7 +81,7 @@
 
 <div class="ui bottom attached active tab segment" data-tab="file">
     <div class="field">
-        <label for="files">Profile CSV file: </label>
+        <label for="files">Profile CSV file: (<a href="profile.csv" download>example</a>) </label>
         <input class="myfile file-input" name="files[]" multiple="" type="file"
                id="files" 
                set_filename="true"
@@ -89,7 +89,7 @@
                />
     </div>
     <div class="field">
-        <label for="files_sequence">Sequence CSV file: </label>
+        <label for="files_sequence">Sequence CSV file: (<a href="sequence.csv" download>example</a>) </label>
         <input class="myfile_sequence file-input" name="files_buffer[]" multiple="" type="file"
                id="files_buffer"
                set_filename="true"
@@ -97,7 +97,7 @@
                />
     </div>
     <div class="field">
-        <label for="files_target">Target CSV file: </label>
+        <label for="files_target">Target CSV file: (<a href="target.csv" download>example</a>) </label>
         <input class="myfile_target file-input" name="files_target[]" multiple="" type="file" 
                id="files_target"
                set_filename="true"
