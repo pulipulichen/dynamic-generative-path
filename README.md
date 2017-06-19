@@ -6,4 +6,4 @@ Git home pacge: https://github.com/pulipulichen/dynamic-generative-path
 Demo: https://pulipulichen.github.io/dynamic-generative-path/
 
 # TODO
-- 結尾改用分類器算距離的方式處理
+- 生成序列，加上下一步節點的判斷資料，例如只判斷50%的下一步，而不是判斷100%的下一步。
